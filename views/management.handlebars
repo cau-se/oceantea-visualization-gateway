@@ -1,0 +1,419 @@
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Add Time Series Data</div>
+	<div class="panel-body">
+		<div class="container" style="max-width: 750px;">
+			<form method="post" action="/upload" enctype="multipart/form-data" role="form" id="formCSVUpload" class="form-horizontal">
+				<div class="form-group">
+					<label for="inputStation" class="control-label col-xs-3">Station ID</label>
+					<div class="col-xs-9">
+						<div class="input-group">
+							<input type="text" class="form-control" id="inputStation" name="station" placeholder="Only letters from the English alphabet, Arabic numerals, and dashes">
+							<div class="input-group-btn">
+								<button type="button" id="stationSelectMenuButton" class="btn btn-default dropdown-toggle" data-toggle="dropdown"><span class="fa fa-caret-down"></span></button>
+								<ul id="stationSelectMenu" class="dropdown-menu dropdown-menu-right" role="menu">
+								</ul>
+							</div>
+						</div>
+						<p class="help-block">
+							If the station is already registered, region name, device ID, latitude, and longitude are ignored; you can leave the corresponding fields blank in this case.
+						</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputRegion" class="control-label col-xs-3">Region Name</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputRegion" name="region" placeholder="e.g., Northern Norway; only letters from the English alphabet and spaces">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputDevice" class="control-label col-xs-3">Device ID</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputDevice" name="device" placeholder="e.g., MLM; only letters from the English alphabet, Arabic numerals, and dashes">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputLatitude" class="control-label col-xs-3">Latitude</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputLatitude" name="latitude" placeholder="Rational number in degrees, north-positive">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputLongitude" class="control-label col-xs-3">Longitude</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputLongitude" name="longitude" placeholder="Rational number in degrees, east-positive">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputDepth" class="control-label col-xs-3">Depth</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputDepth" name="depth" placeholder="Whole number in meters, positive numbers are below the water surface">
+					</div>
+				</div>
+				<div class="form-group" id="inputTimeSeriesTypeGroup">
+					<label for="inputTimeSeriesType" class="control-label col-xs-3">Time Series Type</label>
+					<div class="col-xs-9">
+						<div id="inputTimeSeriesType" style="margin-left: 20px;">
+							<label class="radio">
+								<input type="radio" name="timeSeriesType" value="scalar" checked="checked"> Scalar
+							</label>
+							<label class="radio">
+								<input type="radio" id="inputTimeSeriesTypeADCP" name="timeSeriesType" value="adcp"> ADCP
+							</label>
+						</div>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputDataFile" class="control-label col-xs-3">CSV File</label>
+					<div class="col-xs-9">
+						<input type="file" id="inputDataFile" name="dataFile" style="margin-top: 5px;">
+						<p class="help-block">
+							The CSV file must be formatted according to the following rules:<br>
+							1. The file must contain a header<br>
+							2. The first column must be named <i>timestamp</i> and represent the time in seconds since a reference date<br>
+							3. The separator must be ','<br>
+							4. Comment lines must start with a '#'<br>
+							5. If the file is ADCP data, the first <i>n</i> data columns (after the <i>timestamp</i> column) must be named &quot;directionX&quot; and the second <i>n</i> data columns must be named &quot;magnitudeX&quot;, where <i>X</i> is the bin number in ascending order.
+						</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputDate" class="control-label col-xs-3">Reference Date (UTC)</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputDate" name="referenceDate" value="2012-06-01 00:00:01">
+						<p class="help-block">Format: YYYY-MM-DD HH:MM:SS</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-xs-offset-3 col-xs-9">
+						<button type="submit" class="btn btn-primary" id="buttonUpload">Upload</button> <span id="uploadCSVMessage" style="margin-left: 10px;"></span>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	$(document).ready(function() {
+		$('input[name="timeSeriesType"]:radio').change(function() {
+			if($("#inputTimeSeriesTypeADCP").prop("checked")) {
+				$("#inputTimeSeriesTypeGroup").after('<div class="form-group" id="inputFirstBinGroup">\
+	<label for="inputFirstBin" class="control-label col-xs-3">First ADCP Bin Height</label>\
+	<div class="col-xs-9">\
+		<input type="text" class="form-control" id="inputFirstBinHeight" name="adcpFirstBinHeight" placeholder="Positive rational number in meters">\
+	</div>\
+</div>\
+<div class="form-group" id="inputBinGroup">\
+	<label for="inputBin" class="control-label col-xs-3">ADCP Bin Height</label>\
+	<div class="col-xs-9">\
+		<input type="text" class="form-control" id="inputBinHeight" name="adcpBinHeight" placeholder="Positive rational number in meters">\
+	</div>\
+</div>');
+			}
+			else {
+				$("#inputFirstBinGroup,#inputBinGroup").remove();
+			}
+		});
+	});
+
+
+	function updateStationSelectMenu() {
+		$("#stationSelectMenuButton").prop("disabled", true);
+		$("#stationSelectMenu").empty();
+		$.ajax({
+			url: "/stations",
+			type: "GET",
+			cache: false,
+			success: function(retdata) {
+				var keys = Object.getOwnPropertyNames(retdata);
+				if(keys.length < 1) {
+					return;
+				}
+				keys.forEach(function(name) {
+					$("#stationSelectMenu").append('<li><a id="stationMenuEntryID'+name+'" href="#">'+name+'</a></li>');
+					$("#stationMenuEntryID"+name).click(function() {
+						$("#inputStation").val(name);
+						$("#inputLatitude").val(retdata[name].lat);
+						$("#inputLongitude").val(retdata[name].lon);
+						$("#inputRegion").val(retdata[name].regionPrintName);
+						$("#inputDevice").val(retdata[name].device);
+					});
+				});
+				$("#stationSelectMenuButton").prop("disabled", false);
+			},
+			error: function() {
+			}
+		});
+
+	}
+	$(document).ready(updateStationSelectMenu);
+
+
+
+
+	function dataUploadFormReenable(success, msg) {
+		$("#uploadCSVMessage").empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#buttonUpload").empty().append('Upload');
+		if(success) {
+			$('#formCSVUpload :input[type=text][id!="inputDate"][id!="inputFirstBinHeight"][id!="inputBinHeight"]').prop("value", "");
+			$("#inputDataFile").prop("value", "");
+		}
+		$("#formCSVUpload :input").prop("disabled", false);
+	}
+	$(document).ready(function() {
+		$("#formCSVUpload").submit(function(event) {
+			event.preventDefault();
+			$("#formCSVUpload :input").prop("disabled", true);
+			$("#uploadCSVMessage").empty();
+
+			if($("#inputDataFile")[0].files.length != 1) {
+				dataUploadFormReenable(false, "Select exactly one CSV data file to upload!");
+				return;
+			}
+			// TODO: Further client-side validation
+
+			$("#buttonUpload").empty().append('Uploading... <span class="fa fa-spinner fa-pulse"></span>');
+
+			var formData = new FormData();
+			$("#formCSVUpload :input[type=text]").each(function() {
+				formData.append($(this).prop("name"), $(this).val());
+			});
+			formData.append("timeSeriesType", $('input:radio[name="timeSeriesType"]:checked').val());
+			formData.append($("#inputDataFile").prop("name"), $("#inputDataFile")[0].files[0], "upload.csv");
+			$.ajax({
+				url: "/upload",
+				type: "POST",
+				data: formData,
+				cache: false,
+				contentType: false,
+				processData: false,
+				success: function(retdata) {
+					dataUploadFormReenable(retdata.success, retdata.message);
+					updateDataTypesList();
+					updateTimeSeriesList();
+					updateStationSelectMenu();
+				},
+				error: function() {
+					dataUploadFormReenable(false, "An error occured while uploading the file!");
+				}
+			});
+
+			return false;
+		});
+	});
+</script>
+
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Manage Data Types</div>
+	<div class="panel-body">
+		<table class="table-striped" id="dataTypeTable" style="width: 800px; margin: auto;">
+			<tr id="dataTypeTableHeader" style="height: 3.5em;">
+				<th class="col-xs-3">CSV Field</th>
+				<th class="col-xs-4">Print Name</th>
+				<th class="col-xs-2">Unit</th>
+				<th class="col-xs-3"></th>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function clearDataTypesList() {
+		$("#dataTypeTable tr[id!='dataTypeTableHeader']").remove();
+	}
+	function addInformationRowToDataTypesList(msg) {
+		$("#dataTypeTable").append('<tr style="height: 3.5em;">\
+			<td class="col-xs-12" colspan="4" style="text-align: center;">'+msg+'</td>\
+		</tr>');
+	}
+	function setDataTypeListResponse(id, success, msg) {
+		$("#MDTmessageID"+id).empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#MDTdataTypeSubmitID"+id).empty().append('Set');
+		$("#MDTrowID"+id+" :input").prop("disabled", false);
+	}
+	function addToDataTypesList(csvField, printName, unit) {
+		$("#dataTypeTable").append('<tr style="height: 3.5em;" id="MDTrowID'+csvField+'">\
+			<td class="col-xs-3">'+csvField+'</td>\
+			<td class="col-xs-4"><input type="text" class="form-control" id="MDTprintNameID'+csvField+'" value="'+printName+'"></td>\
+			<td class="col-xs-2"><input type="text" class="form-control" id="MDTunitID'+csvField+'" value="'+unit+'"></td>\
+			<td class="col-xs-3"><button class="btn btn-primary" id="MDTdataTypeSubmitID'+csvField+'">Set</button> <span id="MDTmessageID'+csvField+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
+		</tr>');
+		$("#MDTdataTypeSubmitID"+csvField).click(function() {
+			$("#MDTrowID"+csvField+" :input").prop("disabled", true);
+			$("#MDTmessageID"+csvField).empty();
+			$("#MDTdataTypeSubmitID"+csvField).empty().append('<span class="fa fa-spinner fa-pulse"></span>');
+			$.ajax({
+				url: "/datatypes/"+csvField+"?printName="+encodeURIComponent($("#MDTprintNameID"+csvField).val())+"&unit="+encodeURIComponent($("#MDTunitID"+csvField).val()),
+				type: "PUT",
+				cache: false,
+				success: function(retdata) {
+					if(retdata.success) {
+						setDataTypeListResponse(csvField, true, "Done");
+					}
+					else {
+						setDataTypeListResponse(csvField, false, "Error");
+					}
+				},
+				error: function () {
+					setDataTypeListResponse(csvField, false, "Error");
+				}
+			});
+		});
+	}
+	function updateDataTypesList() {
+		clearDataTypesList();
+		addInformationRowToDataTypesList('<span class="fa fa-spinner fa-pulse"></span> <b>Retrieving known data types...</b>');
+		$.ajax({
+			url: "/datatypes",
+			type: "GET",
+			cache: false,
+			success: function(retdata) {
+				var keys = Object.getOwnPropertyNames(retdata);
+				clearDataTypesList();
+				if(keys.length < 1) {
+					addInformationRowToDataTypesList('<b>No data types known so far.</b>');
+					return;
+				}
+				keys.forEach(function(typeName) {
+					addToDataTypesList(typeName, retdata[typeName].printName, retdata[typeName].unit);
+				});
+			},
+			error: function () {
+				clearDataTypesList();
+				addInformationRowToDataTypesList('<b>An error occurred while retrieving the list of known data types.</b>');
+			}
+		});
+	}
+
+	$(document).ready(function() {
+		updateDataTypesList();
+	});
+</script>
+
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Manage Time Series</div>
+	<div class="panel-body">
+		<table class="table-striped" id="timeSeriesTable" style="min-width: 900px; margin: auto;">
+			<tr id="timeSeriesTableHeader" style="height: 3.5em;">
+				<th class="otsvisTableCell">Station</th>
+				<th class="otsvisTableCell">Region</th>
+				<th class="otsvisTableCell">Device</th>
+				<th class="otsvisTableCell">Lat</th>
+				<th class="otsvisTableCell">Lon</th>
+				<th class="otsvisTableCell">Depth</th>
+				<th class="otsvisTableCell">Series Type</th>
+				<th class="otsvisTableCell">Data Type</th>
+				<th class="otsvisTableCell">Reference Time</th>
+				<th class="otsvisTableCell"></th>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function isAlmostEqualLatLon(a, b) {
+		return (Math.abs(b - a) < 1e-6);
+	}
+	function floatToStringLatLon(v) {
+		return Math.round(v*10000)/10000;
+	}
+	function clearTimeSeriesList() {
+		$("#timeSeriesTable tr[id!='timeSeriesTableHeader']").remove();
+	}
+	function addInformationRowToTimeSeriesList(msg) {
+		$("#timeSeriesTable").append('<tr style="height: 3.5em;">\
+			<td colspan="9" style="text-align: center;">'+msg+'</td>\
+		</tr>');
+	}
+	function setTimeSeriesListResponse(id, success, msg) {
+		$("#MTSmessageID"+id).empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#MTSbtnRemoveID"+id)
+			.empty()
+			.append('<span class="fa fa-trash"></span>')
+			.prop("disabled", false);
+	}
+	function addToTimeSeriesList(ts, prevTS) {
+		prevTS = prevTS || { };
+		var tsID = ts.tsType+"-"+ts.station+"-"+ts.dataType+"-"+ts.depth;
+		var sameStation = (prevTS.station===ts.station);
+		$("#timeSeriesTable").append('<tr style="height: 3.5em;" id="MTSrowID'+tsID+'">\
+			<td class="otsvisTableCell">'+(sameStation ? '' : ts.station)+'</td>\
+			<td class="otsvisTableCell">'+(sameStation && prevTS.region===ts.region ? '' : ts.regionPrintName)+'</td>\
+			<td class="otsvisTableCell">'+(sameStation && prevTS.device===ts.device ? '' : ts.device)+'</td>\
+			<td class="otsvisTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lat, ts.lat) ? '' : floatToStringLatLon(ts.lat))+'</td>\
+			<td class="otsvisTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lon, ts.lon) ? '' : floatToStringLatLon(ts.lon))+'</td>\
+			<td class="otsvisTableCell">'+(sameStation && prevTS.depth===ts.depth ? '' : ts.depth)+'</td>\
+			<td class="otsvisTableCell">'+ts.tsType+'</td>\
+			<td class="otsvisTableCell">'+ts.dataType+'</td>\
+			<td class="otsvisTableCell">'+(sameStation &&prevTS.t_reference===ts.t_reference ? '' : ts.t_reference)+'</td>\
+			<td class="otsvisTableCell"><button class="btn btn-danger" id="MTSbtnRemoveID'+tsID+'" style="margin-top: 7px; margin-bottom: -11px;"><span class="fa fa-trash"></span></button> <span id="MTSmessageID'+tsID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
+		</tr>');
+		$("#MTSbtnRemoveID"+tsID).click(function() {
+			$(this)
+				.prop("disabled", true)
+				.empty()
+				.append('<span class="fa fa-spinner fa-pulse"></span>');
+			$("#MTSmessageID"+tsID).empty();
+			$.ajax({
+				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth,
+				type: "DELETE",
+				cache: false,
+				success: function(retdata) {
+					if(retdata.success) {
+						//$("#MTSrowID"+tsID).remove();
+						updateTimeSeriesList();
+					}
+					else {
+						setTimeSeriesListResponse(tsID, false, "Error");
+					}
+				},
+				error: function () {
+					setTimeSeriesListResponse(tsID, false, "Error");
+				}
+			});
+		});
+	}
+	function updateTimeSeriesList() {
+		clearTimeSeriesList();
+		addInformationRowToTimeSeriesList('<span class="fa fa-spinner fa-pulse"></span> <b>Retrieving time series...</b>');
+		$.ajax({
+			url: "/timeseries",
+			type: "GET",
+			cache: false,
+			success: function(retdata) {
+				clearTimeSeriesList();
+				if(retdata.timeseries.length < 1) {
+					addInformationRowToTimeSeriesList('<b>No time series data.</b>');
+					return;
+				}
+				var prevTS = null
+				retdata.timeseries.forEach(function(ts) {
+					addToTimeSeriesList(ts, prevTS);
+					prevTS = ts;
+				});
+			},
+			error: function () {
+				clearTimeSeriesList();
+				addInformationRowToTimeSeriesList('<b>An error occurred while retrieving the list of time series.</b>');
+			}
+		});
+	}
+
+	$(document).ready(function() {
+		updateTimeSeriesList();
+	});
+</script>

@@ -780,14 +780,14 @@
 			if(groupBy == "type") {
 				dataTypesKeys.forEach(function(type) {
 					if(dataTypes[type].plotGroup) {
-						dataTypes[type].plotGroup.resize(getPlotDimensions());
+						dataTypes[type].plotGroup.resizePlots(getPlotDimensions());
 					}
 				});
 			}
 			else {
 				devicesKeys.forEach(function(device) {
 					if(devices[device].plotGroup) {
-						devices[device].plotGroup.resize(getPlotDimensions());
+						devices[device].plotGroup.resizePlots(getPlotDimensions());
 					}
 				});
 			}

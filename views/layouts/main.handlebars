@@ -20,10 +20,10 @@
 	<div class="row" id="rowNavBar">
 		<div class="col-lg-12">
 			<ul class="nav nav-tabs" style="margin: 5px 0px 15px 0px;">
-				<li{{#if navManagement}} class="active"{{/if}}><a href="/manage.html">Manage Time Series</a></li>
-				<li{{#if navExploration}} class="active"{{/if}}><a href="/">Time Series Exploration</a></li>
-				<li{{#if navAnalysis}} class="active"{{/if}}><a href="/analysis.html">Time Series Analysis</a></li>
-				<li{{#if navMLAnalysis}} class="active"{{/if}}><a href="/mlanalysis.html">Time Series ML Analysis</a></li>
+				<li{{#if navManagement}} class="active"{{/if}}><a href="/manage.html{{#if authToken}}?authToken={{authToken}}{{/if}}">Manage Time Series</a></li>
+				<li{{#if navExploration}} class="active"{{/if}}><a href="/{{#if authToken}}?authToken={{authToken}}{{/if}}">Time Series Exploration</a></li>
+				<li{{#if navSpatialAnalysis}} class="active"{{/if}}><a href="/spatial_analysis.html{{#if authToken}}?authToken={{authToken}}{{/if}}">Spatial Analysis</a></li>
+				<li{{#if navPatternDiscovery}} class="active"{{/if}}><a href="/pattern_discovery.html{{#if authToken}}?authToken={{authToken}}{{/if}}">Temporal Pattern Discovery</a></li>
 			</ul>
 		</div>
 	</div>

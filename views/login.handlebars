@@ -3,14 +3,62 @@
 <div class="panel panel-default">
 	<div class="panel-heading">Login</div>
 	<div class="panel-body">
-		<div class="container" style="max-width: 750px;">
-            {{loginTarget}}
+		<div class="container" style="max-width: 550px;">
+			<form method="get" action="/login/token" enctype="application/x-www-form-urlencoded" role="form" id="formLogin" class="form-horizontal">
+				<div class="form-group">
+					<label for="inputUser" class="control-label col-xs-3">User</label>
+					<div class="col-xs-9">
+						<input type="text" class="form-control" id="inputUser" name="userName" placeholder="">
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputPassword" class="control-label col-xs-3">Password</label>
+					<div class="col-xs-9">
+						<input type="password" class="form-control" id="inputPassword" name="password" placeholder="">
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-xs-offset-3 col-xs-9">
+						<button type="submit" class="btn btn-primary" id="buttonLogin">Login</button> <span id="loginMessage" style="margin-left: 10px;"></span>
+					</div>
+				</div>
+			</form>
 		</div>
 	</div>
 </div>
 
 <script type="text/javascript">
+	function loginFormReenable(msg) {
+		$("#loginMessage").empty()
+			.append('<span class="fa fa-times"></span> ' + msg)
+			.css("color", "red");
+		$("#buttonLogin").empty().append('Upload');
+		$("#formLogin :input").prop("disabled", false);
+	}
+
 	$(document).ready(function() {
-		
+		$("#formLogin").submit(function(event) {
+			event.preventDefault();
+			$("#formLogin :input").prop("disabled", true);
+			$("#loginMessage").empty();
+
+			$.ajax({
+				url: "/login/token?userName="+encodeURIComponent($("#inputUser").val())+"&password="+encodeURIComponent($("#inputPassword").val()),
+				type: "GET",
+				cache: false,
+				success: function(retdata) {
+					if(!retdata.hasOwnProperty("token")) {
+						loginFormReenable("Invalid credentials");
+						return;
+					}
+					window.location.href = "{{loginTarget}}?authToken="+retdata.token;
+				},
+				error: function() {
+					loginFormReenable("Invalid credentials");
+				}
+			});
+
+			return false;
+		});
 	});
 </script>

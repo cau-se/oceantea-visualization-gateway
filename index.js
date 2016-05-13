@@ -1,16 +1,33 @@
+try {
+	process.chdir(__dirname);
+}
+catch(err) {
+	console.log("Could not change working directory to app root");
+	process.exit(1);
+}
+
 const http = require("http");
 const httpProxy = require("http-proxy");
 const express = require("express");
 const exphbs  = require("express-handlebars");
 const validator  = require("validator");
 const authClient = require("./auth_client");
+const httpClient = require("./http_client");
 
 const proxyPort = 3333;
 const appPort = 3334;
 const localAddr = "127.0.0.1";
 
+const authServiceAddr = localAddr;
+const authServicePort = 3332;
+
 const scalarTSServiceAddr = localAddr;
 const scalarTSServicePort = 3335;
+
+const vectorTSServiceAddr = localAddr;
+const vectorTSServicePort = 3336;
+
+
 
 
 
@@ -22,10 +39,11 @@ const app = express();
 app.engine("handlebars", hbs.engine);
 app.set("view engine", "handlebars");
 
-app.use(function(req, res, next) {
-	console.log(req.headers);
-	next();
-});
+//app.use(function(req, res, next) {
+//	//console.log(req.headers);
+//	console.log(req.method);
+//	next();
+//});
 
 
 app.get("/:dummy(index.html)?", function (req, res) {
@@ -45,8 +63,10 @@ app.get("/manage.html", function(req, res, next) { // authorization check
 		}
 		return res.render("login", {
 			pagetitle : "Login",
-			loginTarget : "/manage.html",
 			navManagement : true,
+			loginTarget : "/manage.html",
+			authAddr : authServiceAddr,
+			authPort : authServicePort,
 			libFontAwesome : true
 		});
 	}, function (req, res) {
@@ -81,14 +101,114 @@ app.listen(appPort, localAddr, function () {
 });
 
 
+function sendJSONResponse(res, obj) {
+	res.statusCode = 200;
+	res.setHeader("Content-Type", "application/json");
+	try {
+		res.end(JSON.stringify(obj));
+	} catch(error) {
+		res.statusCode = 500;
+		res.end("{}");	
+	}
+}
+
+function appendToObject(obj, objToAppend) {
+	Object.keys(objToAppend).forEach(function(k) {
+		if(!obj.hasOwnProperty(k)) {
+			obj[k] = objToAppend[k];
+		}
+		else {
+			if(obj[k] !== null && typeof obj[k] === "object") {
+				appendToObject(obj[k], objToAppend[k]);
+			}
+			else if(obj[k] instanceof Array && objToAppend[k] instanceof Array) {
+				objToAppend[k].forEach(function(d) {
+					if(obj[k].indexOf(d) < 0) {
+						obj[k].push(d);
+					}
+				});
+			}
+		}
+	});
+}
+
+function getAndSendMergedJSON(res, path, userID) {
+	var scalarData = null;
+	var vectorData = null;
+	httpClient.getJSON(scalarTSServiceAddr, scalarTSServicePort, path, 5000, userID, function(data) {
+		scalarData = data ? data : {};			
+		if(vectorData !== null) {
+			appendToObject(scalarData, vectorData);
+			sendJSONResponse(res, scalarData);
+		}
+	});
+	httpClient.getJSON(vectorTSServiceAddr, vectorTSServicePort, path, 5000, userID, function(data) {
+		vectorData = data ? data : {};			
+		if(scalarData !== null) {
+			appendToObject(scalarData, vectorData);
+			sendJSONResponse(res, scalarData);
+		}
+	});
+}
+
 function proxyRequest(authToken, userID, req, res) {
 	req.headers["x-auth-userid"] = userID.toString();
 	 
 	if(req.url.indexOf("/timeseries") === 0) {
-		proxy.web(req, res, { target: "http://"+scalarTSServiceAddr+":"+scalarTSServicePort+"", ignorePath: false });
+		if(req.url.indexOf("/timeseries/scalar") === 0) {
+			proxy.web(req, res, {
+				target: "http://"+scalarTSServiceAddr+":"+scalarTSServicePort+req.url,
+				ignorePath: true
+			});
+		}
+		else if(req.url.indexOf("/timeseries/adcp") === 0) {
+			proxy.web(req, res, {
+				target: "http://"+vectorTSServiceAddr+":"+vectorTSServicePort+req.url,
+				ignorePath: true
+			});
+		}
+		else  {
+			getAndSendMergedJSON(res, req.url, userID);
+		}
+	}
+	else if(req.url.indexOf("/datatypes") === 0) {
+		if(req.method.toUpperCase() === "GET") {
+			getAndSendMergedJSON(res, req.url, userID);	
+		}
+		else {
+			// TODO!!!
+			//forwardRequestToAllTSServices(req,);
+			res.end("TODO");
+		}
+	}
+	else if(req.url.indexOf("/stations") === 0) {
+		getAndSendMergedJSON(res, "/stations", userID);
+	}
+	else if(req.url.indexOf("/regions") === 0) {
+		getAndSendMergedJSON(res, "/regions", userID);
+	}
+	else if(req.url.indexOf("/devices") === 0) {
+		getAndSendMergedJSON(res, "/devices", userID);
+	}
+	else if(req.url.indexOf("/login") === 0) {
+		proxy.web(req, res, {
+			target: "http://"+authServiceAddr+":"+authServicePort+req.url.substr("/login".length),
+			ignorePath: true
+		});
+	}
+	else if(req.url.indexOf("/upload/scalar") === 0) {
+		//TODO
+		res.end("TODO");
+	}
+	else if(req.url.indexOf("/upload/adcp") === 0) {
+		//TODO
+		res.end("TODO");
 	}
 	else {
-		proxy.web(req, res, { target: "http://"+localAddr+":"+appPort, ignorePath: false });
+		proxy.web(req, res, {
+			target: "http://"+localAddr+":"+appPort+req.url,
+			ignorePath: true
+		});
 	}
 }
 

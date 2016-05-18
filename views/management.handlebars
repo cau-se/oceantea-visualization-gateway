@@ -126,6 +126,9 @@
 			url: "/stations",
 			type: "GET",
 			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
 			success: function(retdata) {
 				var keys = Object.getOwnPropertyNames(retdata);
 				if(keys.length < 1) {
@@ -185,19 +188,26 @@
 			formData.append("timeSeriesType", $('input:radio[name="timeSeriesType"]:checked').val());
 			formData.append($("#inputDataFile").prop("name"), $("#inputDataFile")[0].files[0], "upload.csv");
 			$.ajax({
-				url: "/upload",
+				url: "/upload/"+($("#inputTimeSeriesTypeADCP").prop("checked") ? "adcp" : "scalar"),
 				type: "POST",
 				data: formData,
 				cache: false,
 				contentType: false,
 				processData: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
 				success: function(retdata) {
 					dataUploadFormReenable(retdata.success, retdata.message);
 					updateDataTypesList();
 					updateTimeSeriesList();
 					updateStationSelectMenu();
 				},
-				error: function() {
+				error: function(xhr, textStatus, errorThrown) {
+					if(xhr.hasOwnProperty("responseJSON")) {
+						dataUploadFormReenable(xhr.responseJSON.success, xhr.responseJSON.message);
+						return;
+					}
 					dataUploadFormReenable(false, "An error occured while uploading the file!");
 				}
 			});
@@ -255,6 +265,9 @@
 				url: "/datatypes/"+csvField+"?printName="+encodeURIComponent($("#MDTprintNameID"+csvField).val())+"&unit="+encodeURIComponent($("#MDTunitID"+csvField).val()),
 				type: "PUT",
 				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
 				success: function(retdata) {
 					if(retdata.success) {
 						setDataTypeListResponse(csvField, true, "Done");
@@ -276,6 +289,9 @@
 			url: "/datatypes",
 			type: "GET",
 			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
 			success: function(retdata) {
 				var keys = Object.getOwnPropertyNames(retdata);
 				clearDataTypesList();
@@ -372,6 +388,9 @@
 				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth,
 				type: "DELETE",
 				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
 				success: function(retdata) {
 					if(retdata.success) {
 						//$("#MTSrowID"+tsID).remove();
@@ -394,6 +413,9 @@
 			url: "/timeseries",
 			type: "GET",
 			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
 			success: function(retdata) {
 				clearTimeSeriesList();
 				if(retdata.timeseries.length < 1) {

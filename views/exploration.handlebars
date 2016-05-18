@@ -263,6 +263,9 @@
 				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth,
 				type: "GET",
 				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
 				success: function(retdata) {
 					var refDate = new Date(ts.t_reference);
 					ts.data = retdata.data.map(function(d) {
@@ -874,6 +877,9 @@
 			url: "/timeseries?includeAggregatedMetadata=true",
 			type: "GET",
 			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
 			success: function(retdata) {
 				regions = retdata.regions;
 				regionsKeys = Object.getOwnPropertyNames(regions);

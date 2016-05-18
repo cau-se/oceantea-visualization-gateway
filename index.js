@@ -101,8 +101,8 @@ app.listen(appPort, localAddr, function () {
 });
 
 
-function sendJSONResponse(res, obj) {
-	res.statusCode = 200;
+function sendJSONResponse(res, status, obj) {
+	res.statusCode = status;
 	res.setHeader("Content-Type", "application/json");
 	try {
 		res.end(JSON.stringify(obj));
@@ -139,14 +139,33 @@ function getAndSendMergedJSON(res, path, userID) {
 		scalarData = data ? data : {};			
 		if(vectorData !== null) {
 			appendToObject(scalarData, vectorData);
-			sendJSONResponse(res, scalarData);
+			sendJSONResponse(res, 200, scalarData);
 		}
 	});
 	httpClient.getJSON(vectorTSServiceAddr, vectorTSServicePort, path, 5000, userID, function(data) {
 		vectorData = data ? data : {};			
 		if(scalarData !== null) {
 			appendToObject(scalarData, vectorData);
-			sendJSONResponse(res, scalarData);
+			sendJSONResponse(res, 200, scalarData);
+		}
+	});
+}
+
+function forwardRequestToTSServices(method, path, userID, callback) {
+	var statusCodes = [];
+	var bodies = [];
+	httpClient.requestResource(method, scalarTSServiceAddr, scalarTSServicePort, path, 5000, userID, function(status, body) {
+		statusCodes.push(status);
+		bodies.push(body);
+		if(statusCodes.length >= 2) {
+			callback(statusCodes, bodies);
+		}
+	});
+	httpClient.requestResource(method, vectorTSServiceAddr, vectorTSServicePort, path, 5000, userID, function(status, body) {
+		statusCodes.push(status);
+		bodies.push(body);
+		if(statusCodes.length >= 2) {
+			callback(statusCodes, bodies);
 		}
 	});
 }
@@ -176,9 +195,10 @@ function proxyRequest(authToken, userID, req, res) {
 			getAndSendMergedJSON(res, req.url, userID);	
 		}
 		else {
-			// TODO!!!
-			//forwardRequestToAllTSServices(req,);
-			res.end("TODO");
+			forwardRequestToTSServices(req.method, req.url, userID, function(statusCodes, bodies) {
+				const result = (statusCodes.indexOf(200) >= 0);
+				sendJSONResponse(res, result ? 200 : 500, {success: result});
+			});
 		}
 	}
 	else if(req.url.indexOf("/stations") === 0) {
@@ -197,12 +217,16 @@ function proxyRequest(authToken, userID, req, res) {
 		});
 	}
 	else if(req.url.indexOf("/upload/scalar") === 0) {
-		//TODO
-		res.end("TODO");
+		proxy.web(req, res, {
+			target: "http://"+scalarTSServiceAddr+":"+scalarTSServicePort+"/upload",
+			ignorePath: true
+		});
 	}
 	else if(req.url.indexOf("/upload/adcp") === 0) {
-		//TODO
-		res.end("TODO");
+		proxy.web(req, res, {
+			target: "http://"+vectorTSServiceAddr+":"+vectorTSServicePort+"/upload",
+			ignorePath: true
+		});
 	}
 	else {
 		proxy.web(req, res, {
@@ -214,6 +238,10 @@ function proxyRequest(authToken, userID, req, res) {
 
 
 const proxy = httpProxy.createProxyServer({});
+proxy.on("error", function (err, req, res) {
+	res.statusCode = 500;
+	res.end("Reverse proxy error: "+ err);
+});
 const proxyServer = http.createServer(function(req, res) {
 	// You can define here your custom logic to handle the request 
 	// and then proxy the request.

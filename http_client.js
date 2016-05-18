@@ -42,4 +42,36 @@ function getJSON(host, port, path, timeout, userID, callback) {
 	req.end();
 }
 
+function requestResource(method, host, port, path, timeout, userID, callback) {
+	var req = http.request({
+			hostname: host,
+			port: port,
+			path: path,
+			method: method,
+			headers: {
+				"x-auth-userid": userID.toString()
+			}
+		}, function(res) {
+			var body = "";
+			res.on("data", function(chunk) {
+				body += chunk;
+			});
+			res.on("end", function() {
+				callback(res.statusCode, body);
+			});
+		});
+	req.on("error", function(e) {
+		callback(500, "");
+	});
+	req.on("socket", function(socket) {
+		socket.setTimeout(timeout);  
+		socket.on("timeout", function() {
+			req.abort();
+			//callback(); <- do not call this because abort() fires error event for req.
+		});
+	});
+	req.end();
+}
+
 module.exports.getJSON = getJSON;
+module.exports.requestResource = requestResource;

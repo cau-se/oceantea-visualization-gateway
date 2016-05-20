@@ -118,10 +118,10 @@ function appendToObject(obj, objToAppend) {
 			obj[k] = objToAppend[k];
 		}
 		else {
-			if(obj[k] !== null && typeof obj[k] === "object") {
+			if(obj[k] !== null && typeof obj[k] === "object" && !Array.isArray(obj[k])) {
 				appendToObject(obj[k], objToAppend[k]);
 			}
-			else if(obj[k] instanceof Array && objToAppend[k] instanceof Array) {
+			else if(Array.isArray(obj[k]) && Array.isArray(objToAppend[k])) {
 				objToAppend[k].forEach(function(d) {
 					if(obj[k].indexOf(d) < 0) {
 						obj[k].push(d);
@@ -186,7 +186,8 @@ function proxyRequest(authToken, userID, req, res) {
 				ignorePath: true
 			});
 		}
-		else  {
+		else {
+			//console.log(req.url);
 			getAndSendMergedJSON(res, req.url, userID);
 		}
 	}

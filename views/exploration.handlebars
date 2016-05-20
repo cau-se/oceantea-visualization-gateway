@@ -268,10 +268,14 @@
 				},
 				success: function(retdata) {
 					var refDate = new Date(ts.t_reference);
-					ts.data = retdata.data.map(function(d) {
+					ts.data = retdata.data.map(ts.tsType === "scalar" ? function(d) {
 						var tsDate = new Date(refDate);
 						tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
 						return [tsDate, d[1]];
+					} : function(d) {
+						var tsDate = new Date(refDate);
+						tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
+						return [tsDate, d[1], d[2], d[3]];
 					});
 					ts.ajaxLoading = false;
 					addTimeSeriesToAppropriatePlotGroup(ts);
@@ -314,12 +318,11 @@
 	}
 
 	function isTimeSeriesToBeShown(ts) {
-		return (ts.tsType == "scalar" // FIXME: Add support for other types
-			&& dataTypes[ts.dataType].selected
+		return (dataTypes[ts.dataType].selected
 			&& stations[ts.station].selected
 			&& currentDepthRanges.some(function(range) {
 				return (range[0] <= ts.depth && ts.depth <= range[1]);
-			}));
+			})); //ts.tsType == "scalar"
 		//return (dataTypes[ts.type].selected
 		//	&& stations[ts.station].selected
 		//	&& regions[ts.region].selected && devices[ts.device].selected

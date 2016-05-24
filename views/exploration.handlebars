@@ -250,69 +250,84 @@
 	}
 
 
-	function loadAndDisplayTimeSeries(ts) {
-		if(ts.data !== null) {
-			addTimeSeriesToAppropriatePlotGroup(ts);
+	function loadAndDisplayTimeSeries(ts, depth) {
+		var effectiveDepth = depth!==undefined ? depth : ts.depth;
+		var depthStr = effectiveDepth.toString();
+		if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].data !== null) {
+			addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
 			return;
 		}
-		else if(ts.ajaxLoading) {
+		else if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].ajaxLoading) {
 			return;
 		}
 		else {
+			ts.data[depthStr] = {
+				ajaxLoading: true,
+				plotGroup: null,
+				uniquePlotID : "",
+				data : null
+			};
 			$.ajax({
-				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth,
+				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth + (depth!==undefined ? "?extractDepth="+depthStr : ""),
 				type: "GET",
 				cache: false,
 				headers: {
 					"x-auth-token": "{{authToken}}"
 				},
 				success: function(retdata) {
+					ts.data[depthStr].ajaxLoading = false;
 					var refDate = new Date(ts.t_reference);
-					ts.data = retdata.data.map(ts.tsType === "scalar" ? function(d) {
-						var tsDate = new Date(refDate);
-						tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
-						return [tsDate, d[1]];
-					} : function(d) {
-						var tsDate = new Date(refDate);
-						tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
-						return [tsDate, d[1], d[2], d[3]];
-					});
-					ts.ajaxLoading = false;
-					addTimeSeriesToAppropriatePlotGroup(ts);
+					if(ts.tsType == "scalar") {
+						ts.data[depthStr].data = retdata.data.map(function(d) {
+							var tsDate = new Date(refDate);
+							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
+							return [tsDate, d[1]];
+						});
+						
+					}
+					else {
+						ts.data[depthStr].data = retdata.data.map(function(d) {
+							var tsDate = new Date(refDate);
+							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
+							return [tsDate, d[1], d[2], d[3]];
+						});
+					}
+					addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
 				},
 				error: function() {
-					ts.data = null;
-					ts.ajaxLoading = false;
+					ts.data[depthStr].data = null;
+					ts.data[depthStr].ajaxLoading = false;
 				}
 			});
 		}
 	}
 
-	function getUniquePlotID(ts) {
-		return ts.tsType + "-" + (groupBy == "type" ? ts.station : ts.region+"-"+ts.dataType) + "-" + ts.depth;
+	function getUniquePlotID(ts, depth) {
+		return ts.tsType + "-" + (groupBy == "type" ? ts.station : ts.region+"-"+ts.dataType) + "-" + ts.depth + (depth!==undefined ? ("-"+depth) : "");
 	}
 
-	function addTimeSeriesToAppropriatePlotGroup(ts) {
-		if(ts.data === null || ts.plotGroup !== null) {
+	function addTimeSeriesToAppropriatePlotGroup(ts, depth) {
+		var depthStr = depth.toString();
+		if(ts.data[depthStr].data === null || ts.data[depthStr].plotGroup !== null) {
 			return;
 		}
 		var pg = (groupBy == "type" ? dataTypes[ts.dataType].plotGroup : devices[ts.device].plotGroup);
 		if(pg === null) {
 			return;
 		}
-		ts.uniquePlotID = getUniquePlotID(ts);
-		ts.plotGroup = pg;
-		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+ts.depth+" m";
+		ts.data[depthStr].uniquePlotID = getUniquePlotID(ts, depth);
+		ts.data[depthStr].plotGroup = pg;
+		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+depth+" m";
 		var yAxisLabel = "";
 		if(groupBy == "type" || numOfGraphs == "multiple") {
 			yAxisLabel = dataTypes[ts.dataType].displayNameWithUnit;
 		}
 		pg.addDataSet(
 			ts.tsType == "scalar" ? "CanvasTimeSeriesPlot" : "CanvasVectorSeriesPlot",
-			ts.uniquePlotID, 
+			getUniquePlotID(ts, depth), 
 			displayName, 
-			ts.data, 
-			getPlotColor(ts.region, ts.station, ts.dataType, ts.depth), {
+			ts.data[depthStr].data, 
+			getPlotColor(ts.region, ts.station, ts.dataType, depth), {
 				"yAxisLabel": yAxisLabel
 			});
 	}
@@ -335,13 +350,50 @@
 	function addAndRemoveTimeSeries() {
 		timeseries.forEach(function(ts) {
 			var isToBeShown = isTimeSeriesToBeShown(ts);
-			if(ts.plotGroup===null && isToBeShown) {
-				loadAndDisplayTimeSeries(ts);
+			
+			if(isToBeShown) {
+				if(ts.tsType == "scalar" && ts.data[ts.depth.toString()].plotGroup === null) {
+						loadAndDisplayTimeSeries(ts, ts.depth);
+				}
+				else {
+					Object.keys(ts.data).forEach(function(d) {
+						if(ts.data[d].plotGroup !== null && adcpDepths.indexOf(parseInt(d)) < 0) {
+							var ds = ts.data[d];
+							ds.plotGroup.removeDataSet(ds.uniquePlotID);
+							ds.plotGroup = null;
+							ds.uniquePlotID = "";
+						}
+					});
+					adcpDepths.forEach(function(d) {
+						if(!ts.data.hasOwnProperty(d.toString())
+						|| ts.data[d.toString()].plotGroup === null) {
+							loadAndDisplayTimeSeries(ts, d);
+						}
+					});
+					if(adcpDepths.length == 0) {
+						loadAndDisplayTimeSeries(ts, ts.depth);
+					}
+				}
 			}
-			else if(ts.plotGroup!==null && !isToBeShown) {
-				ts.plotGroup.removeDataSet(ts.uniquePlotID);
-				ts.plotGroup = null;
-				ts.uniquePlotID = "";
+			else {
+				if(ts.tsType == "scalar" || adcpDepths.length == 0) {
+					if(ts.data[ts.depth.toString()].plotGroup !== null) {
+						var ds = ts.data[ts.depth.toString()];
+						ds.plotGroup.removeDataSet(ds.uniquePlotID);
+						ds.plotGroup = null;
+						ds.uniquePlotID = "";
+					}
+				}
+				else {
+					Object.keys(ts.data).forEach(function(d) {
+						if(ts.data[d].plotGroup !== null) {
+							var ds = ts.data[d];
+							ds.plotGroup.removeDataSet(ds.uniquePlotID);
+							ds.plotGroup = null;
+							ds.uniquePlotID = "";
+						}
+					});
+				}
 			}
 		});
 	}
@@ -493,8 +545,10 @@
 			});
 		}
 		timeseries.forEach(function(ts) {
-			ts.plotGroup = null;
-			ts.uniquePlotID = "";
+			Object.keys(ts.data).forEach(function(d) {
+				ts.data[d].plotGroup = null;
+				ts.data[d].uniquePlotID = "";
+			});
 		});
 		$('#maincontainer div[class="row"][id!="rowNavBar"][id!="rowSettings"]').remove();
 	}
@@ -621,8 +675,10 @@
 			});
 		}
 		timeseries.forEach(function(ts) {
-			ts.plotGroup = null;
-			ts.uniquePlotID = "";
+			Object.keys(ts.data).forEach(function(d) {
+				ts.data[d].plotGroup = null;
+				ts.data[d].uniquePlotID = "";
+			});
 		});
 		resetGroupSettings();
 		addAndRemoveTimeSeries();
@@ -699,6 +755,7 @@
 			$("#btnADCPDepth"+i+"Remove").click(function() {
 				adcpDepths.splice(i, 1);
 				updateADCPDepthButtons();
+				addAndRemoveTimeSeries();
 			});
 		});
 	}
@@ -750,11 +807,13 @@
 		
 		$("#btnADCPDepthAdd").click(function() {
 			var depth = parseFloat($("#inputADCPDepth").val());
+			$("#inputADCPDepth").val("");
 			if(isNaN(depth) || adcpDepths.indexOf(depth)>=0) {
 				return;
 			}
 			adcpDepths.push(depth);
 			updateADCPDepthButtons();
+			addAndRemoveTimeSeries();
 		});
 
 		$("#btnGroupByType").click(function() {
@@ -908,10 +967,16 @@
 				});
 
 				timeseries.forEach(function(ts) {
-					ts["data"] = null;
-					ts["ajaxLoading"] = false;
-					ts["plotGroup"] = null;
-					ts["uniquePlotID"] = "";
+					ts["data"] = {};
+					ts.data[ts.depth.toString()] = {
+						ajaxLoading: false,
+						plotGroup: null,
+						uniquePlotID : "",
+						data : null
+					};
+					//ts["ajaxLoading"] = false;
+					//ts["plotGroup"] = null;
+					//ts["uniquePlotID"] = "";
 
 					latRange[0] = Math.min(latRange[0], ts.lat);
 					latRange[1] = Math.max(latRange[1], ts.lat);

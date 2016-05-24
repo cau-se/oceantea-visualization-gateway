@@ -229,6 +229,12 @@ function proxyRequest(authToken, userID, req, res) {
 			ignorePath: true
 		});
 	}
+	else if(req.url.indexOf("/convert") === 0) {
+		proxy.web(req, res, {
+			target: "http://"+scalarTSServiceAddr+":"+scalarTSServicePort+"/convert",
+			ignorePath: true
+		});
+	}
 	else {
 		proxy.web(req, res, {
 			target: "http://"+localAddr+":"+appPort+req.url,

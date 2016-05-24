@@ -75,6 +75,11 @@
 							4. Comment lines must start with a '#'<br>
 							5. If the file is ADCP data, the first <i>n</i> data columns (after the <i>timestamp</i> column) must be named &quot;directionX&quot; and the second <i>n</i> data columns must be named &quot;magnitudeX&quot;, where <i>X</i> is the bin number in ascending order.
 						</p>
+						<div id="inputAutoConvert" style="margin-left: 20px;">
+							<label class="checkbox">
+								<input type="checkbox" name="autoConvert" value="autoConvert" checked="checked"> Convert time series automatically
+							</label>
+						</div>
 					</div>
 				</div>
 				<div class="form-group">
@@ -185,6 +190,7 @@
 				formData.append($(this).prop("name"), $(this).val());
 			});
 			formData.append("timeSeriesType", $('input:radio[name="timeSeriesType"]:checked').val());
+			formData.append("autoConvert", $('input:checkbox[name="autoConvert"]').is(":checked"));
 			formData.append($("#inputDataFile").prop("name"), $("#inputDataFile")[0].files[0], "upload.csv");
 			$.ajax({
 				url: "/upload/"+($("#inputTimeSeriesTypeADCP").prop("checked") ? "adcp" : "scalar"),
@@ -215,6 +221,55 @@
 		});
 	});
 </script>
+
+
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Convert Time Series</div>
+	<div class="panel-body">
+		<button class="btn btn-primary" id="buttonConvert">Convert</button> <span id="convertTSMessage" style="margin-left: 10px;"></span>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function setConvertMessageAndReenable(success, msg) {
+		$("#convertTSMessage").empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#buttonConvert").prop("disabled", false)
+			.empty()
+			.append('Convert');
+	}
+
+	$(document).ready(function() {
+		$("#buttonConvert").click(function() {
+			$(this).prop("disabled", true)
+				.empty()
+				.append('<span class="fa fa-spinner fa-pulse"></span> Converting...');
+			$("#convertTSMessage").empty();
+			
+			$.ajax({
+				url: "/convert",
+				type: "GET",
+				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
+				success: function(retdata) {
+					setConvertMessageAndReenable(true, "Done");
+					updateTimeSeriesList();
+					updateDataTypesList();
+				},
+				error: function () {
+					setConvertMessageAndReenable(false, "Error");
+				}
+			});
+		});
+	});
+</script>
+
 
 
 
@@ -394,6 +449,8 @@
 					if(retdata.success) {
 						//$("#MTSrowID"+tsID).remove();
 						updateTimeSeriesList();
+						updateDataTypesList();
+						updateStationSelectMenu();
 					}
 					else {
 						setTimeSeriesListResponse(tsID, false, "Error");

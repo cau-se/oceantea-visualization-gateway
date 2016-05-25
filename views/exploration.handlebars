@@ -99,669 +99,115 @@
 	var mapPrevOverlay = null;
 
 
-	function floatToStringLatLon(v) {
-		return Math.round(v*10000)/10000;
-	}
-	function getSVGIconURL(msg, isSelected) {
-		var fontSize = Math.min(32, Math.round(140/msg.length));
-		var textYAnchor = 33-Math.round(0.5*(34-fontSize));
-		var fgColor = isSelected ? 'crimson' : '#039be5';
-		var bgColor = 'white';
-		var svg = '<?xml version="1.0"?>\
-<svg width="50px" height="25px" viewBox="0 0 100 50" version="1.1" xmlns="http://www.w3.org/2000/svg">\
-	<path d="M50 50 L39 39 L61 39 Z" stroke="none" fill="'+fgColor+'" />\
-	<rect x="0" y="0" width="100" height="40" stroke="none" fill="'+fgColor+'" />\
-	<rect x="3" y="3" width="94" height="34" stroke="none" fill="'+bgColor+'" />\
-	<text x="50" y="'+textYAnchor+'" stroke="black" text-anchor="middle" font-family="sans-serif" font-size="'+fontSize+'">'+msg+'</text>\
-</svg>';
-		return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
-	}
-	function isPointInPoly(point, vs) {
-		// ray-casting algorithm from substack (https://github.com/substack/point-in-polygon)
-		// based on http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
-		// MIT license
-		var x = point[0], y = point[1];
 
-		var inside = false;
-		for(var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-			var xi = vs[i][0], yi = vs[i][1];
-			var xj = vs[j][0], yj = vs[j][1];
+	
+	
+	// ***
+	// *** Setup functions
+	// ***
+	
+	$(document).ready(function() {
+		retrieveTimeriesAndAggregatedMetadata(setupUIOnceReady);
+	});
 
-			var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-			if(intersect) inside = !inside;
-		}
-		return inside;
-	}
-	function getMapZoomValue(rangeLat, rangeLon) {
-		var dist = Math.max(Math.max(rangeLat[1]-rangeLat[0], rangeLon[1]-rangeLon[0]), 0.001);
-		var value = Math.floor(Math.log(dist/180) / Math.log(0.5));
-		return value;
-	}
-	function centerMapOnRegion(region) {
-		if(!(regions.hasOwnProperty(region))) {
-			return;
-		}
-		var rangeLat = regions[region].latRange;
-		var rangeLon = regions[region].lonRange;
-		
-		mapApp.setCenter(new google.maps.LatLng(0.5*(rangeLat[1]+rangeLat[0]), 
-			0.5*(rangeLon[1]+rangeLon[0])));
-		mapApp.setZoom(getMapZoomValue(rangeLat, rangeLon));
-	}
-	function initMap() {
-		$("#mapPanelBody").css("height", "390px");
-		var latlon = {lat: 0.5*(latRange[1]+latRange[0]), lng: 0.5*(lonRange[1]+lonRange[0])};
-		mapApp = new google.maps.Map(document.getElementById("mapPanelBody"), {
-			center: latlon,
-			zoom: getMapZoomValue(latRange, lonRange),
-			zoomControl: true,
-			mapTypeControl: true,
-			scaleControl: false,
-			streetViewControl: false,
-			rotateControl: false,
-			fullscreenControl: false,
-			mapTypeId: google.maps.MapTypeId.SATELLITE,
-			mapTypeControlOptions: {
-				style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
-				mapTypeIds: [
-					google.maps.MapTypeId.SATELLITE,
-					google.maps.MapTypeId.TERRAIN
-				]
-			}
-		});
-		mapApp.setTilt(0);
-
-		stationsKeys.forEach(function(s) {
-			var marker = new google.maps.Marker({
-				position: {lat: stations[s].lat, lng: stations[s].lon},
-				map: mapApp,
-				title: stations[s].displayNameFull,
-			   draggable: false,
-				icon: { url: getSVGIconURL(stations[s].device, stations[s].selected) }
-			});
-			//var iw = new google.maps.InfoWindow({
-			//	//disableAutoPan: true,
-			//	content: '<b>'+stations[s].displayNameFull+'</b><br>Lat: '+floatToStringLatLon(stations[s].lat)+'<br>Lon: '+floatToStringLatLon(stations[s].lon)+'<br>Depth(s): '+stations[s].depths.join(", ")
-			//});
-			google.maps.event.addListener(marker, "click", function(e) {
-				//stationsKeys.forEach(function(s) {
-				//	stations[s].mapInfoWindow.close();
-				//});
-				//iw.open(mapApp, marker);
-				toggleStation(s);
-			});
-			stations[s]["mapMarker"] = marker;
-			//stations[s]["mapInfoWindow"] = iw;
-		});
-
-		var shapeOptions = {
-			fillColor: "#ffeb3b",
-			fillOpacity: 0.35,
-			strokeColor: "#DAA520",
-			strokeWeight: 3,
-			clickable: false
-		};
-		mapDrawingManager = new google.maps.drawing.DrawingManager({
-			drawingMode: null,
-			drawingControl: true,
-			drawingControlOptions: {
-				position: google.maps.ControlPosition.TOP_RIGHT,
-				drawingModes: [
-					google.maps.drawing.OverlayType.POLYGON,
-					google.maps.drawing.OverlayType.RECTANGLE
-				]
+	function retrieveTimeriesAndAggregatedMetadata(callback) {
+		$.ajax({
+			url: "/timeseries?includeAggregatedMetadata=true",
+			type: "GET",
+			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
 			},
-			polygonOptions: shapeOptions,
-			rectangleOptions: shapeOptions
-		});
-		mapDrawingManager.setMap(mapApp);
-		google.maps.event.addListener(mapDrawingManager, "overlaycomplete", function(event) {
-			if(event.type != google.maps.drawing.OverlayType.POLYGON && event.type != google.maps.drawing.OverlayType.RECTANGLE) {
-				event.overlay.setMap(null);
-				return;
-			}
-			if(mapPrevOverlay) {
-				mapPrevOverlay.setMap(null);
-				mapPrevOverlay = null;
-			}
+			success: function(retdata) {
+				regions = retdata.regions;
+				regionsKeys = Object.getOwnPropertyNames(regions);
+				stations = retdata.stations;
+				stationsKeys = Object.getOwnPropertyNames(stations);
+				dataTypes = retdata.datatypes;
+				dataTypesKeys = Object.getOwnPropertyNames(dataTypes);
+				timeseries = retdata.timeseries;
+				devicesKeys = retdata.devices;
 
-			if(event.type == google.maps.drawing.OverlayType.POLYGON) {
-				var path = event.overlay.getPath().getArray().map(function(d) {
-					return [d.lat(), d.lng()];
+				devices = {};
+				devicesKeys.forEach(function(d) {
+					devices[d] = {
+						plotGroup : null,
+						selected : false
+					};
 				});
+
+				regionsKeys.forEach(function(r) {
+					regions[r]["selected"] = false;
+					regions[r]["latRange"] = [1000, -1000];
+					regions[r]["lonRange"] = [1000, -1000];
+				});
+
+				timeseries.forEach(function(ts) {
+					ts["data"] = {};
+					ts.data[ts.depth.toString()] = {
+						ajaxLoading: false,
+						plotGroup: null,
+						uniquePlotID : "",
+						data : null
+					};
+					//ts["ajaxLoading"] = false;
+					//ts["plotGroup"] = null;
+					//ts["uniquePlotID"] = "";
+
+					latRange[0] = Math.min(latRange[0], ts.lat);
+					latRange[1] = Math.max(latRange[1], ts.lat);
+					regions[ts.region].latRange[0] = Math.min(regions[ts.region].latRange[0], ts.lat);
+					regions[ts.region].latRange[1] = Math.max(regions[ts.region].latRange[1], ts.lat);
+					
+					lonRange[0] = Math.min(lonRange[0], ts.lon);
+					lonRange[1] = Math.max(lonRange[1], ts.lon);
+					regions[ts.region].lonRange[0] = Math.min(regions[ts.region].lonRange[0], ts.lon);
+					regions[ts.region].lonRange[1] = Math.max(regions[ts.region].lonRange[1], ts.lon);
+					
+					depthRange[0] = Math.min(depthRange[0], ts.depth);
+					depthRange[1] = Math.max(depthRange[1], ts.depth);
+				});
+				latRange[0] = Math.min(Math.max(latRange[0], -90), 90);
+				latRange[1] = Math.min(Math.max(latRange[1], -90), 90);
+				
+				lonRange[0] = Math.min(Math.max(lonRange[0], -180), 180);
+				lonRange[1] = Math.min(Math.max(lonRange[1], -180), 180);
+				
+				depthRange[0] = 10 * Math.floor(depthRange[0]/10);
+				depthRange[1] = 10 * Math.ceil((depthRange[1]+1)/10);
+
 				stationsKeys.forEach(function(s) {
-					var inside = isPointInPoly([stations[s].lat, stations[s].lon], path);
-					if((inside && !stations[s].selected) || (!inside && stations[s].selected)) {
-						toggleStation(s);
-					}
+					//stations[s]["plotGroup"] = null;
+					stations[s]["selected"] = false;
+					stations[s]["displayNameFull"] = stations[s].regionPrintName+" "+stations[s].device;
+					//stations[s]["displayNameShort"] = (stations[s].shorthand.length > 0 ? stations[s].shorthand : s);
+					//stations[s]["displayName"] = (stations[s].shorthand.length > 0 && shorthandCount[stations[s].shorthand] == 1 ? stations[s].shorthand : stations[s].displayNameFull);
 				});
-			}
-			else { // it has to be a RECTANGLE
-				var bounds = event.overlay.getBounds();
-				stationsKeys.forEach(function(s) {
-					var inside = bounds.contains(new google.maps.LatLng(stations[s].lat, stations[s].lon));
-					if((inside && !stations[s].selected) || (!inside && stations[s].selected)) {
-						toggleStation(s);
-					}
+				dataTypesKeys.forEach(function(t) {
+					dataTypes[t]["plotGroup"] = null;
+					dataTypes[t]["selected"] = false;
+					dataTypes[t]["displayName"] = (dataTypes[t].printName.length > 0 ? dataTypes[t].printName : t);
+					dataTypes[t]["displayNameWithUnit"] = dataTypes[t].displayName + (dataTypes[t].unit.length > 0 ? " ["+dataTypes[t].unit+"]" : "");
 				});
-			}
-			mapPrevOverlay = event.overlay;
-		});
-	}
 
-
-	function loadAndDisplayTimeSeries(ts, depth) {
-		var effectiveDepth = depth!==undefined ? depth : ts.depth;
-		var depthStr = effectiveDepth.toString();
-		if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].data !== null) {
-			addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
-			return;
-		}
-		else if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].ajaxLoading) {
-			return;
-		}
-		else {
-			ts.data[depthStr] = {
-				ajaxLoading: true,
-				plotGroup: null,
-				uniquePlotID : "",
-				data : null
-			};
-			$.ajax({
-				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth + (depth!==undefined ? "?extractDepth="+depthStr : ""),
-				type: "GET",
-				cache: false,
-				headers: {
-					"x-auth-token": "{{authToken}}"
-				},
-				success: function(retdata) {
-					ts.data[depthStr].ajaxLoading = false;
-					var refDate = new Date(ts.t_reference);
-					if(ts.tsType == "scalar") {
-						ts.data[depthStr].data = retdata.data.map(function(d) {
-							var tsDate = new Date(refDate);
-							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
-							return [tsDate, d[1]];
-						});
-						
-					}
-					else {
-						ts.data[depthStr].data = retdata.data.map(function(d) {
-							var tsDate = new Date(refDate);
-							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
-							return [tsDate, d[1], d[2], d[3]];
-						});
-					}
-					addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
-				},
-				error: function() {
-					ts.data[depthStr].data = null;
-					ts.data[depthStr].ajaxLoading = false;
+				if(callback) {
+					callback();
 				}
-			});
-		}
-	}
-
-	function getUniquePlotID(ts, depth) {
-		return ts.tsType + "-" + (groupBy == "type" ? ts.station : ts.region+"-"+ts.dataType) + "-" + ts.depth + (depth!==undefined ? ("-"+depth) : "");
-	}
-
-	function addTimeSeriesToAppropriatePlotGroup(ts, depth) {
-		var depthStr = depth.toString();
-		if(ts.data[depthStr].data === null || ts.data[depthStr].plotGroup !== null) {
-			return;
-		}
-		var pg = (groupBy == "type" ? dataTypes[ts.dataType].plotGroup : devices[ts.device].plotGroup);
-		if(pg === null) {
-			return;
-		}
-		ts.data[depthStr].uniquePlotID = getUniquePlotID(ts, depth);
-		ts.data[depthStr].plotGroup = pg;
-		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+depth+" m";
-		var yAxisLabel = "";
-		if(groupBy == "type" || numOfGraphs == "multiple") {
-			yAxisLabel = dataTypes[ts.dataType].displayNameWithUnit;
-		}
-		pg.addDataSet(
-			ts.tsType == "scalar" ? "CanvasTimeSeriesPlot" : "CanvasVectorSeriesPlot",
-			getUniquePlotID(ts, depth), 
-			displayName, 
-			ts.data[depthStr].data, 
-			getPlotColor(ts.region, ts.station, ts.dataType, depth), {
-				"yAxisLabel": yAxisLabel
-			});
-	}
-
-	function isTimeSeriesToBeShown(ts) {
-		return (dataTypes[ts.dataType].selected
-			&& stations[ts.station].selected
-			&& currentDepthRanges.some(function(range) {
-				return (range[0] <= ts.depth && ts.depth <= range[1]);
-			})); //ts.tsType == "scalar"
-		//return (dataTypes[ts.type].selected
-		//	&& stations[ts.station].selected
-		//	&& regions[ts.region].selected && devices[ts.device].selected
-		//	&& currentDepthRange[0] <= ts.depth && ts.depth <= currentDepthRange[1]);
-		//return (dataTypes[ts.type].selected
-		//	&& (stations[ts.station].selected || (regions[ts.region].selected && devices[ts.device].selected))
-		//	&& currentDepthRange[0] <= ts.depth && ts.depth <= currentDepthRange[1]);
-	}
-
-	function addAndRemoveTimeSeries() {
-		timeseries.forEach(function(ts) {
-			var isToBeShown = isTimeSeriesToBeShown(ts);
-			
-			if(isToBeShown) {
-				if(ts.tsType == "scalar" && ts.data[ts.depth.toString()].plotGroup === null) {
-						loadAndDisplayTimeSeries(ts, ts.depth);
-				}
-				else {
-					Object.keys(ts.data).forEach(function(d) {
-						if(ts.data[d].plotGroup !== null && adcpDepths.indexOf(parseInt(d)) < 0) {
-							var ds = ts.data[d];
-							ds.plotGroup.removeDataSet(ds.uniquePlotID);
-							ds.plotGroup = null;
-							ds.uniquePlotID = "";
-						}
-					});
-					adcpDepths.forEach(function(d) {
-						if(!ts.data.hasOwnProperty(d.toString())
-						|| ts.data[d.toString()].plotGroup === null) {
-							loadAndDisplayTimeSeries(ts, d);
-						}
-					});
-					if(adcpDepths.length == 0) {
-						loadAndDisplayTimeSeries(ts, ts.depth);
-					}
-				}
-			}
-			else {
-				if(ts.tsType == "scalar" || adcpDepths.length == 0) {
-					if(ts.data[ts.depth.toString()].plotGroup !== null) {
-						var ds = ts.data[ts.depth.toString()];
-						ds.plotGroup.removeDataSet(ds.uniquePlotID);
-						ds.plotGroup = null;
-						ds.uniquePlotID = "";
-					}
-				}
-				else {
-					Object.keys(ts.data).forEach(function(d) {
-						if(ts.data[d].plotGroup !== null) {
-							var ds = ts.data[d];
-							ds.plotGroup.removeDataSet(ds.uniquePlotID);
-							ds.plotGroup = null;
-							ds.uniquePlotID = "";
-						}
-					});
-				}
-			}
-		});
-	}
-
-	function adppendPanelToMainGroup(title, rowid) {
-		$("#rowSettings").after('<div class="row" id="rowID'+rowid+'">\
-<div class="col-lg-12">\
-	<div class="panel panel-default">\
-		<div class="panel-heading clearfix">\
-			<span class="pull-left">'+title+'</span>\
-			<span class="checkbox pull-right" style="margin: 0;">\
-				<label><input id="rowID'+rowid+'Sync" type="checkbox"'+(numOfGraphs=="multiple" ? '' : 'disabled')+'>Sync Plots</label>\
-				<label style="margin-left: 15px"><input id="rowID'+rowid+'SyncOnlyX" type="checkbox"'+(numOfGraphs=="multiple" ? '' : 'disabled')+'>Sync X Axis Only</label>\
-			</span>\
-		</div>\
-		<div class="panel-body" id="rowID'+rowid+'Body">\
-		</div>\
-	</div>\
-</div>\
-</div>');
-	}
-
-	function getPlotDimensions() {
-		var w = $(window).width() - 100;
-		if(numOfGraphs=="multiple") {
-			w = 0.5*w;
-		}
-		w = Math.round(Math.max(w, 300));
-		return [w, Math.round(0.45*w)];
-	}
-
-	function toggleRegion(region) {
-		regions[region].selected = !regions[region].selected;
-		if(regions[region].selected) {
-			$("#btnRegion"+region).prop("class", btnClassActivated);
-			stationsKeys.forEach(function(station) {
-				if(stations[station].region == region && !stations[station].selected && devices[stations[station].device].selected) {
-					stations[station].selected = true;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
-				}
-			});
-			addAndRemoveTimeSeries();
-		}
-		else {
-			$("#btnRegion"+region).prop("class", btnClassDeactivated);
-			stationsKeys.forEach(function(station) {
-				if(stations[station].region == region && stations[station].selected) {
-					stations[station].selected = false;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
-				}
-			});
-			addAndRemoveTimeSeries();
-		}
-	}
-	function toggleDevice(device) {
-		devices[device].selected = !devices[device].selected;
-		if(devices[device].selected) {
-			$("#btnDevice"+device).prop("class", btnClassActivated);
-			stationsKeys.forEach(function(station) {
-				if(stations[station].device == device && !stations[station].selected && regions[stations[station].region].selected) {
-					stations[station].selected = true;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
-				}
-			});
-			if(groupBy == "device") {
-				addNonexistentGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-		else {
-			$("#btnDevice"+device).prop("class", btnClassDeactivated);
-			stationsKeys.forEach(function(station) {
-				if(stations[station].device == device && stations[station].selected) {
-					stations[station].selected = false;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
-				}
-			});
-			if(groupBy == "device") {
-				removeEmptyGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-	}
-	function toggleMeasurement(type) {
-		dataTypes[type].selected = !dataTypes[type].selected;
-		if(dataTypes[type].selected) {
-			$("#btnMeasurementType"+type).prop("class", btnClassActivated);
-			if(groupBy == "type") {
-				addNonexistentGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-		else {
-			$("#btnMeasurementType"+type).prop("class", btnClassDeactivated);
-			if(groupBy == "type") {
-				removeEmptyGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-	}
-	function toggleStation(station) {
-		stations[station].selected = !stations[station].selected;
-		stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, stations[station].selected));
-		if(stations[station].selected) {
-			if(groupBy == "device") {
-				addNonexistentGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-		else {
-			if(groupBy == "device") {
-				removeEmptyGroups();
-			}
-			else {
-				addAndRemoveTimeSeries();
-			}
-		}
-	}
-
-	function removeAllGroups() {
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].plotGroup) {
-					dataTypes[type].plotGroup.destroy();
-					dataTypes[type].plotGroup = null;
-					$("#rowID"+type+"Sync").off("change");
-					$("#rowID"+type+"SyncOnlyX").off("change");
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].plotGroup) {
-					devices[device].plotGroup.destroy();
-					devices[device].plotGroup = null;
-					$("#rowID"+device+"Sync").off("change");
-					$("#rowID"+device+"SyncOnlyX").off("change");
-				}
-			});
-		}
-		timeseries.forEach(function(ts) {
-			Object.keys(ts.data).forEach(function(d) {
-				ts.data[d].plotGroup = null;
-				ts.data[d].uniquePlotID = "";
-			});
-		});
-		$('#maincontainer div[class="row"][id!="rowNavBar"][id!="rowSettings"]').remove();
-	}
-
-	function removeEmptyGroups() {
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].plotGroup !== null && !dataTypes[type].selected) {
-					dataTypes[type].plotGroup.destroy();
-					dataTypes[type].plotGroup = null;
-					addAndRemoveTimeSeries();
-					$("#rowID"+type+"Sync").off("change");
-					$("#rowID"+type+"SyncOnlyX").off("change");
-					$("#rowID"+type).remove();
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].plotGroup !== null
-					&& !devices[device].selected
-					&& stationsKeys.every(function(station) {
-						return (stations[station].device != device || !stations[station].selected);
-					})) {
-					devices[device].plotGroup.destroy();
-					devices[device].plotGroup = null;
-					addAndRemoveTimeSeries();
-					$("#rowID"+device+"Sync").off("change");
-					$("#rowID"+device+"SyncOnlyX").off("change");
-					$("#rowID"+device).remove();
-				}
-			});
-		}
-	}
-
-	function addNonexistentGroups() {
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].selected && !dataTypes[type].plotGroup) {
-					adppendPanelToMainGroup(dataTypes[type].displayNameWithUnit, type);
-					dataTypes[type].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+type+"Body"), getPlotDimensions(), numOfGraphs=="multiple", true, plotConfig);
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].selected && !devices[device].plotGroup) {
-					adppendPanelToMainGroup(device, device);
-					devices[device].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+device+"Body"), getPlotDimensions(), numOfGraphs=="multiple", false, plotConfig);
-				}
-			});
-		}
-		resetGroupSettings();
-		addAndRemoveTimeSeries();
-	}
-
-	function resetCheckListener(rowID, plotGroup) {
-		$("#rowID"+rowID+"Sync")
-			.prop("disabled", numOfGraphs!="multiple")
-			.prop("checked", groupBy=="type")
-			.off("change")
-			.change(function() {
-				plotGroup.setSyncViews($(this).prop("checked"), true, !($("#rowID"+rowID+"SyncOnlyX").prop("checked")));
-			});
-		$("#rowID"+rowID+"SyncOnlyX")
-			.prop("disabled", numOfGraphs!="multiple")
-			.prop("checked", groupBy=="device")
-			.off("change")
-			.change(function() {
-				plotGroup.setSyncViews($("#rowID"+rowID+"Sync").prop("checked"), true, !($(this).prop("checked")));
-			});
-	}
-
-	function resetGroupSettings() {
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].plotGroup) {
-					resetCheckListener(type, dataTypes[type].plotGroup);
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].plotGroup) {
-					resetCheckListener(device, devices[device].plotGroup);
-				}
-			});
-		}
-	}
-
-	function setGroupBy(by) {
-		if(by == groupBy) {
-			return;
-		}
-		groupBy = by;
-		$("#btnGroupByType").prop("class", groupBy == "type" ? btnClassActivated : btnClassDeactivated);
-		$("#btnGroupByDevice").prop("class", groupBy == "type" ? btnClassDeactivated : btnClassActivated);
-		resetColorRegistry();
-		removeAllGroups();
-		addNonexistentGroups();
-	}
-
-	function setMultiplePlots(num) {
-		if(num == numOfGraphs) {
-			return;
-		}
-		numOfGraphs = num;
-		$("#btnMultiplePlots").prop("class", numOfGraphs == "multiple" ? btnClassActivated : btnClassDeactivated);
-		$("#btnSinglePlot").prop("class", numOfGraphs == "multiple" ? btnClassDeactivated : btnClassActivated);
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].plotGroup) {
-					dataTypes[type].plotGroup.destroy();
-					dataTypes[type].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+type+"Body"), getPlotDimensions(), numOfGraphs=="multiple", true, plotConfig);
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].plotGroup) {
-					devices[device].plotGroup.destroy();
-					devices[device].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+device+"Body"), getPlotDimensions(), numOfGraphs=="multiple", false, plotConfig);
-				}
-			});
-		}
-		timeseries.forEach(function(ts) {
-			Object.keys(ts.data).forEach(function(d) {
-				ts.data[d].plotGroup = null;
-				ts.data[d].uniquePlotID = "";
-			});
-		});
-		resetGroupSettings();
-		addAndRemoveTimeSeries();
-	}
-
-	function setDepthSlidersWidth() {
-		var filterWidth = $("#depthFilters").innerWidth();
-		depthSliders.forEach(function(_, i) {
-			$("#sliderDepthSlider"+i).css("width", Math.max(filterWidth - 60 - $("#filtersDepthGroupLabel"+i).outerWidth() - $("#filtersDepthGroupAdd"+i).outerWidth(), 100)+"px");
-		});
-	}
-
-	function addDepthSlider() {
-		var index = depthSliders.length;
-		$("#depthFilters").append('<div class="btn-group controlBtnGroup" id="filtersDepthGroup'+index+'" style="width: 100%;">\
-	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled">Depth Interval #'+(index+1)+'</button>\
-	<button type="button" id="filtersDepthGroupAdd'+index+'" class="btn btn-primary"><span class="fa fa-plus"></span></button>\
-	<div class="form-control" id="filtersDepthSliderContainer'+index+'" style="text-align: center;"><input id="sliderDepth'+index+'" type="text"></div>\
-</div>');
-		currentDepthRanges.push(depthRange);
-		depthSliders.push($("#sliderDepth"+index).slider({
-			id: "sliderDepthSlider"+index,
-			min: depthRange[0],
-			max: depthRange[1],
-			step: 1,
-			range: true,
-			formatter: function(v) {
-				return v[0]+" to "+v[1]+" m";
 			},
-			value: currentDepthRanges[index]
-		}).on("slide", function() {
-			currentDepthRanges[index] = depthSliders[index].getValue();
-			addAndRemoveTimeSeries();
-		}).data("slider"));
-		$("#filtersDepthGroupAdd"+index).click(addDepthSlider);
-		setDepthSlidersWidth();
-		addAndRemoveTimeSeries();
-	}
-
-	function setZoomBehavior(setX, setY) {
-		if(zoomXAxes == setX && zoomYAxes == setY) {
-			return;
-		}
-		zoomXAxes = setX;
-		zoomYAxes = setY;
-
-		$("#btnZoomBoth").prop("class", zoomXAxes && zoomYAxes ? btnClassActivated : btnClassDeactivated);
-		$("#btnZoomX").prop("class", zoomXAxes && !zoomYAxes ? btnClassActivated : btnClassDeactivated);
-		$("#btnZoomY").prop("class", !zoomXAxes && zoomYAxes ? btnClassActivated : btnClassDeactivated);
-
-		if(groupBy == "type") {
-			dataTypesKeys.forEach(function(type) {
-				if(dataTypes[type].plotGroup) {
-					dataTypes[type].plotGroup.setZoomXAxis(zoomXAxes);
-					dataTypes[type].plotGroup.setZoomYAxis(zoomYAxes);
-				}
-			});
-		}
-		else {
-			devicesKeys.forEach(function(device) {
-				if(devices[device].plotGroup) {
-					devices[device].plotGroup.setZoomXAxis(zoomXAxes);
-					devices[device].plotGroup.setZoomYAxis(zoomYAxes);
-				}
-			});
-		}
+			error: function() {
+				stations = {};
+			}
+		});
 	}
 	
-	function updateADCPDepthButtons() {
-		$("#adcpDepthFilters").find(":button[id!='adcpDepthFiltersLabel'][id!='btnADCPDepthAdd']").remove();
-		adcpDepths.forEach(function(d, i) {
-			$("#adcpDepthFilters").append('<button type="button" id="valueADCPDepth'+i+'" class="btn btn-default disabled">'+d+' m</button>\
-<button type="button" id="btnADCPDepth'+i+'Remove" class="btn btn-primary"><span class="fa fa-minus"></span></button>');
-			$("#btnADCPDepth"+i+"Remove").click(function() {
-				adcpDepths.splice(i, 1);
-				updateADCPDepthButtons();
-				addAndRemoveTimeSeries();
-			});
-		});
-	}
-
+	
+	
+	// ***
+	// *** UI Functions
+	// ***
+	
 	function setupUIOnceReady() {
-		if(timeseries===null) {
+		if(timeseries === null) {
 			return;
 		}
 
@@ -933,98 +379,677 @@
 			}
 		});
 	}
+	
+	function getPlotDimensions() {
+		var w = $(window).width() - 100;
+		if(numOfGraphs=="multiple") {
+			w = 0.5*w;
+		}
+		w = Math.round(Math.max(w, 300));
+		return [w, Math.round(0.45*w)];
+	}
 
-	function retrieveTimeriesAndAggregatedMetadata(callback) {
-		$.ajax({
-			url: "/timeseries?includeAggregatedMetadata=true",
-			type: "GET",
-			cache: false,
-			headers: {
-				"x-auth-token": "{{authToken}}"
-			},
-			success: function(retdata) {
-				regions = retdata.regions;
-				regionsKeys = Object.getOwnPropertyNames(regions);
-				stations = retdata.stations;
-				stationsKeys = Object.getOwnPropertyNames(stations);
-				dataTypes = retdata.datatypes;
-				dataTypesKeys = Object.getOwnPropertyNames(dataTypes);
-				timeseries = retdata.timeseries;
-				devicesKeys = retdata.devices;
-
-				devices = {};
-				devicesKeys.forEach(function(d) {
-					devices[d] = {
-						plotGroup : null,
-						selected : false
-					};
-				});
-
-				regionsKeys.forEach(function(r) {
-					regions[r]["selected"] = false;
-					regions[r]["latRange"] = [1000, -1000];
-					regions[r]["lonRange"] = [1000, -1000];
-				});
-
-				timeseries.forEach(function(ts) {
-					ts["data"] = {};
-					ts.data[ts.depth.toString()] = {
-						ajaxLoading: false,
-						plotGroup: null,
-						uniquePlotID : "",
-						data : null
-					};
-					//ts["ajaxLoading"] = false;
-					//ts["plotGroup"] = null;
-					//ts["uniquePlotID"] = "";
-
-					latRange[0] = Math.min(latRange[0], ts.lat);
-					latRange[1] = Math.max(latRange[1], ts.lat);
-					regions[ts.region].latRange[0] = Math.min(regions[ts.region].latRange[0], ts.lat);
-					regions[ts.region].latRange[1] = Math.max(regions[ts.region].latRange[1], ts.lat);
-					
-					lonRange[0] = Math.min(lonRange[0], ts.lon);
-					lonRange[1] = Math.max(lonRange[1], ts.lon);
-					regions[ts.region].lonRange[0] = Math.min(regions[ts.region].lonRange[0], ts.lon);
-					regions[ts.region].lonRange[1] = Math.max(regions[ts.region].lonRange[1], ts.lon);
-					
-					depthRange[0] = Math.min(depthRange[0], ts.depth);
-					depthRange[1] = Math.max(depthRange[1], ts.depth);
-				});
-				latRange[0] = Math.min(Math.max(latRange[0], -90), 90);
-				latRange[1] = Math.min(Math.max(latRange[1], -90), 90);
-				
-				lonRange[0] = Math.min(Math.max(lonRange[0], -180), 180);
-				lonRange[1] = Math.min(Math.max(lonRange[1], -180), 180);
-				
-				depthRange[0] = 10 * Math.floor(depthRange[0]/10);
-				depthRange[1] = 10 * Math.ceil((depthRange[1]+1)/10);
-
-				stationsKeys.forEach(function(s) {
-					//stations[s]["plotGroup"] = null;
-					stations[s]["selected"] = false;
-					stations[s]["displayNameFull"] = stations[s].regionPrintName+" "+stations[s].device;
-					//stations[s]["displayNameShort"] = (stations[s].shorthand.length > 0 ? stations[s].shorthand : s);
-					//stations[s]["displayName"] = (stations[s].shorthand.length > 0 && shorthandCount[stations[s].shorthand] == 1 ? stations[s].shorthand : stations[s].displayNameFull);
-				});
-				dataTypesKeys.forEach(function(t) {
-					dataTypes[t]["plotGroup"] = null;
-					dataTypes[t]["selected"] = false;
-					dataTypes[t]["displayName"] = (dataTypes[t].printName.length > 0 ? dataTypes[t].printName : t);
-					dataTypes[t]["displayNameWithUnit"] = dataTypes[t].displayName + (dataTypes[t].unit.length > 0 ? " ["+dataTypes[t].unit+"]" : "");
-				});
-
-				if(callback) {
-					callback();
-				}
-			},
-			error: function() {
-				stations = {};
-			}
+	function setDepthSlidersWidth() {
+		var filterWidth = $("#depthFilters").innerWidth();
+		depthSliders.forEach(function(_, i) {
+			$("#sliderDepthSlider"+i).css("width", Math.max(filterWidth - 60 - $("#filtersDepthGroupLabel"+i).outerWidth() - $("#filtersDepthGroupAdd"+i).outerWidth(), 100)+"px");
 		});
 	}
 
-	$(document).ready(function() {
-		retrieveTimeriesAndAggregatedMetadata(setupUIOnceReady);
-	});
+	function addDepthSlider() {
+		var index = depthSliders.length;
+		$("#depthFilters").append('<div class="btn-group controlBtnGroup" id="filtersDepthGroup'+index+'" style="width: 100%;">\
+	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled">Depth Interval #'+(index+1)+'</button>\
+	<button type="button" id="filtersDepthGroupAdd'+index+'" class="btn btn-primary"><span class="fa fa-plus"></span></button>\
+	<div class="form-control" id="filtersDepthSliderContainer'+index+'" style="text-align: center;"><input id="sliderDepth'+index+'" type="text"></div>\
+</div>');
+		currentDepthRanges.push(depthRange);
+		depthSliders.push($("#sliderDepth"+index).slider({
+			id: "sliderDepthSlider"+index,
+			min: depthRange[0],
+			max: depthRange[1],
+			step: 1,
+			range: true,
+			formatter: function(v) {
+				return v[0]+" to "+v[1]+" m";
+			},
+			value: currentDepthRanges[index]
+		}).on("slide", function() {
+			currentDepthRanges[index] = depthSliders[index].getValue();
+			addAndRemoveTimeSeries();
+		}).data("slider"));
+		$("#filtersDepthGroupAdd"+index).click(addDepthSlider);
+		setDepthSlidersWidth();
+		addAndRemoveTimeSeries();
+	}
+
+	function toggleRegion(region) {
+		regions[region].selected = !regions[region].selected;
+		if(regions[region].selected) {
+			$("#btnRegion"+region).prop("class", btnClassActivated);
+			stationsKeys.forEach(function(station) {
+				if(stations[station].region == region && !stations[station].selected && devices[stations[station].device].selected) {
+					stations[station].selected = true;
+					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+				}
+			});
+			addAndRemoveTimeSeries();
+		}
+		else {
+			$("#btnRegion"+region).prop("class", btnClassDeactivated);
+			stationsKeys.forEach(function(station) {
+				if(stations[station].region == region && stations[station].selected) {
+					stations[station].selected = false;
+					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+				}
+			});
+			addAndRemoveTimeSeries();
+		}
+	}
+	
+	function toggleDevice(device) {
+		devices[device].selected = !devices[device].selected;
+		if(devices[device].selected) {
+			$("#btnDevice"+device).prop("class", btnClassActivated);
+			stationsKeys.forEach(function(station) {
+				if(stations[station].device == device && !stations[station].selected && regions[stations[station].region].selected) {
+					stations[station].selected = true;
+					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+				}
+			});
+			if(groupBy == "device") {
+				addNonexistentGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+		else {
+			$("#btnDevice"+device).prop("class", btnClassDeactivated);
+			stationsKeys.forEach(function(station) {
+				if(stations[station].device == device && stations[station].selected) {
+					stations[station].selected = false;
+					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+				}
+			});
+			if(groupBy == "device") {
+				removeEmptyGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+	}
+	
+	function toggleMeasurement(type) {
+		dataTypes[type].selected = !dataTypes[type].selected;
+		if(dataTypes[type].selected) {
+			$("#btnMeasurementType"+type).prop("class", btnClassActivated);
+			if(groupBy == "type") {
+				addNonexistentGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+		else {
+			$("#btnMeasurementType"+type).prop("class", btnClassDeactivated);
+			if(groupBy == "type") {
+				removeEmptyGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+	}
+	
+	function toggleStation(station) {
+		stations[station].selected = !stations[station].selected;
+		stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, stations[station].selected));
+		if(stations[station].selected) {
+			if(groupBy == "device") {
+				addNonexistentGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+		else {
+			if(groupBy == "device") {
+				removeEmptyGroups();
+			}
+			else {
+				addAndRemoveTimeSeries();
+			}
+		}
+	}
+	
+	function setGroupBy(by) {
+		if(by == groupBy) {
+			return;
+		}
+		groupBy = by;
+		$("#btnGroupByType").prop("class", groupBy == "type" ? btnClassActivated : btnClassDeactivated);
+		$("#btnGroupByDevice").prop("class", groupBy == "type" ? btnClassDeactivated : btnClassActivated);
+		resetColorRegistry();
+		removeAllGroups();
+		addNonexistentGroups();
+	}
+
+	function setMultiplePlots(num) {
+		if(num == numOfGraphs) {
+			return;
+		}
+		numOfGraphs = num;
+		$("#btnMultiplePlots").prop("class", numOfGraphs == "multiple" ? btnClassActivated : btnClassDeactivated);
+		$("#btnSinglePlot").prop("class", numOfGraphs == "multiple" ? btnClassDeactivated : btnClassActivated);
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].plotGroup) {
+					dataTypes[type].plotGroup.destroy();
+					dataTypes[type].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+type+"Body"), getPlotDimensions(), numOfGraphs=="multiple", true, plotConfig);
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].plotGroup) {
+					devices[device].plotGroup.destroy();
+					devices[device].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+device+"Body"), getPlotDimensions(), numOfGraphs=="multiple", false, plotConfig);
+				}
+			});
+		}
+		timeseries.forEach(function(ts) {
+			Object.keys(ts.data).forEach(function(d) {
+				ts.data[d].plotGroup = null;
+				ts.data[d].uniquePlotID = "";
+			});
+		});
+		resetGroupSettings();
+		addAndRemoveTimeSeries();
+	}
+	
+	function setZoomBehavior(setX, setY) {
+		if(zoomXAxes == setX && zoomYAxes == setY) {
+			return;
+		}
+		zoomXAxes = setX;
+		zoomYAxes = setY;
+
+		$("#btnZoomBoth").prop("class", zoomXAxes && zoomYAxes ? btnClassActivated : btnClassDeactivated);
+		$("#btnZoomX").prop("class", zoomXAxes && !zoomYAxes ? btnClassActivated : btnClassDeactivated);
+		$("#btnZoomY").prop("class", !zoomXAxes && zoomYAxes ? btnClassActivated : btnClassDeactivated);
+
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].plotGroup) {
+					dataTypes[type].plotGroup.setZoomXAxis(zoomXAxes);
+					dataTypes[type].plotGroup.setZoomYAxis(zoomYAxes);
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].plotGroup) {
+					devices[device].plotGroup.setZoomXAxis(zoomXAxes);
+					devices[device].plotGroup.setZoomYAxis(zoomYAxes);
+				}
+			});
+		}
+	}
+	
+	function resetCheckListener(rowID, plotGroup) {
+		$("#rowID"+rowID+"Sync")
+			.prop("disabled", numOfGraphs!="multiple")
+			.prop("checked", groupBy=="type")
+			.off("change")
+			.change(function() {
+				plotGroup.setSyncViews($(this).prop("checked"), true, !($("#rowID"+rowID+"SyncOnlyX").prop("checked")));
+			});
+		$("#rowID"+rowID+"SyncOnlyX")
+			.prop("disabled", numOfGraphs!="multiple")
+			.prop("checked", groupBy=="device")
+			.off("change")
+			.change(function() {
+				plotGroup.setSyncViews($("#rowID"+rowID+"Sync").prop("checked"), true, !($(this).prop("checked")));
+			});
+	}
+
+	function resetGroupSettings() {
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].plotGroup) {
+					resetCheckListener(type, dataTypes[type].plotGroup);
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].plotGroup) {
+					resetCheckListener(device, devices[device].plotGroup);
+				}
+			});
+		}
+	}
+	
+	function updateADCPDepthButtons() {
+		$("#adcpDepthFilters").find(":button[id!='adcpDepthFiltersLabel'][id!='btnADCPDepthAdd']").remove();
+		adcpDepths.forEach(function(d, i) {
+			$("#adcpDepthFilters").append('<button type="button" id="valueADCPDepth'+i+'" class="btn btn-default disabled">'+d+' m</button>\
+<button type="button" id="btnADCPDepth'+i+'Remove" class="btn btn-primary"><span class="fa fa-minus"></span></button>');
+			$("#btnADCPDepth"+i+"Remove").click(function() {
+				adcpDepths.splice(i, 1);
+				updateADCPDepthButtons();
+				addAndRemoveTimeSeries();
+			});
+		});
+	}
+	
+	function adppendPanelToMainGroup(title, rowid) {
+		$("#rowSettings").after('<div class="row" id="rowID'+rowid+'">\
+<div class="col-lg-12">\
+	<div class="panel panel-default">\
+		<div class="panel-heading clearfix">\
+			<span class="pull-left">'+title+'</span>\
+			<span class="checkbox pull-right" style="margin: 0;">\
+				<label><input id="rowID'+rowid+'Sync" type="checkbox"'+(numOfGraphs=="multiple" ? '' : 'disabled')+'>Sync Plots</label>\
+				<label style="margin-left: 15px"><input id="rowID'+rowid+'SyncOnlyX" type="checkbox"'+(numOfGraphs=="multiple" ? '' : 'disabled')+'>Sync X Axis Only</label>\
+			</span>\
+		</div>\
+		<div class="panel-body" id="rowID'+rowid+'Body">\
+		</div>\
+	</div>\
+</div>\
+</div>');
+	}
+
+	function removeAllGroups() {
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].plotGroup) {
+					dataTypes[type].plotGroup.destroy();
+					dataTypes[type].plotGroup = null;
+					$("#rowID"+type+"Sync").off("change");
+					$("#rowID"+type+"SyncOnlyX").off("change");
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].plotGroup) {
+					devices[device].plotGroup.destroy();
+					devices[device].plotGroup = null;
+					$("#rowID"+device+"Sync").off("change");
+					$("#rowID"+device+"SyncOnlyX").off("change");
+				}
+			});
+		}
+		timeseries.forEach(function(ts) {
+			Object.keys(ts.data).forEach(function(d) {
+				ts.data[d].plotGroup = null;
+				ts.data[d].uniquePlotID = "";
+			});
+		});
+		$('#maincontainer div[class="row"][id!="rowNavBar"][id!="rowSettings"]').remove();
+	}
+
+	function removeEmptyGroups() {
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].plotGroup !== null && !dataTypes[type].selected) {
+					dataTypes[type].plotGroup.destroy();
+					dataTypes[type].plotGroup = null;
+					addAndRemoveTimeSeries();
+					$("#rowID"+type+"Sync").off("change");
+					$("#rowID"+type+"SyncOnlyX").off("change");
+					$("#rowID"+type).remove();
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].plotGroup !== null
+					&& !devices[device].selected
+					&& stationsKeys.every(function(station) {
+						return (stations[station].device != device || !stations[station].selected);
+					})) {
+					devices[device].plotGroup.destroy();
+					devices[device].plotGroup = null;
+					addAndRemoveTimeSeries();
+					$("#rowID"+device+"Sync").off("change");
+					$("#rowID"+device+"SyncOnlyX").off("change");
+					$("#rowID"+device).remove();
+				}
+			});
+		}
+	}
+
+	function addNonexistentGroups() {
+		if(groupBy == "type") {
+			dataTypesKeys.forEach(function(type) {
+				if(dataTypes[type].selected && !dataTypes[type].plotGroup) {
+					adppendPanelToMainGroup(dataTypes[type].displayNameWithUnit, type);
+					dataTypes[type].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+type+"Body"), getPlotDimensions(), numOfGraphs=="multiple", true, plotConfig);
+				}
+			});
+		}
+		else {
+			devicesKeys.forEach(function(device) {
+				if(devices[device].selected && !devices[device].plotGroup) {
+					adppendPanelToMainGroup(device, device);
+					devices[device].plotGroup = new CanvasDataPlotGroup(d3.select("#rowID"+device+"Body"), getPlotDimensions(), numOfGraphs=="multiple", false, plotConfig);
+				}
+			});
+		}
+		resetGroupSettings();
+		addAndRemoveTimeSeries();
+	}
+
+
+
+	// ***
+	// *** Functions related to the map (Google Maps)
+	// ***
+	
+	function isPointInPoly(point, vs) {
+		// ray-casting algorithm from substack (https://github.com/substack/point-in-polygon)
+		// based on http://www.ecse.rpi.edu/Homepages/wrf/Research/Short_Notes/pnpoly.html
+		// MIT license
+		var x = point[0], y = point[1];
+
+		var inside = false;
+		for(var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+			var xi = vs[i][0], yi = vs[i][1];
+			var xj = vs[j][0], yj = vs[j][1];
+
+			var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+			if(intersect) inside = !inside;
+		}
+		return inside;
+	}
+	
+	function getSVGIconURL(msg, isSelected) {
+		var fontSize = Math.min(32, Math.round(140/msg.length));
+		var textYAnchor = 33-Math.round(0.5*(34-fontSize));
+		var fgColor = isSelected ? 'crimson' : '#039be5';
+		var bgColor = 'white';
+		var svg = '<?xml version="1.0"?>\
+<svg width="50px" height="25px" viewBox="0 0 100 50" version="1.1" xmlns="http://www.w3.org/2000/svg">\
+	<path d="M50 50 L39 39 L61 39 Z" stroke="none" fill="'+fgColor+'" />\
+	<rect x="0" y="0" width="100" height="40" stroke="none" fill="'+fgColor+'" />\
+	<rect x="3" y="3" width="94" height="34" stroke="none" fill="'+bgColor+'" />\
+	<text x="50" y="'+textYAnchor+'" stroke="black" text-anchor="middle" font-family="sans-serif" font-size="'+fontSize+'">'+msg+'</text>\
+</svg>';
+		return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
+	}
+	
+	function getMapZoomValue(rangeLat, rangeLon) {
+		var dist = Math.max(Math.max(rangeLat[1]-rangeLat[0], rangeLon[1]-rangeLon[0]), 0.001);
+		var value = Math.floor(Math.log(dist/180) / Math.log(0.5));
+		return value;
+	}
+	
+	function centerMapOnRegion(region) {
+		if(!(regions.hasOwnProperty(region))) {
+			return;
+		}
+		var rangeLat = regions[region].latRange;
+		var rangeLon = regions[region].lonRange;
+		
+		mapApp.setCenter(new google.maps.LatLng(0.5*(rangeLat[1]+rangeLat[0]), 
+			0.5*(rangeLon[1]+rangeLon[0])));
+		mapApp.setZoom(getMapZoomValue(rangeLat, rangeLon));
+	}
+	
+	//function floatToStringLatLon(v) {
+	//	return Math.round(v*10000)/10000;
+	//}
+	
+	function initMap() {
+		$("#mapPanelBody").css("height", "390px");
+		var latlon = {lat: 0.5*(latRange[1]+latRange[0]), lng: 0.5*(lonRange[1]+lonRange[0])};
+		mapApp = new google.maps.Map(document.getElementById("mapPanelBody"), {
+			center: latlon,
+			zoom: getMapZoomValue(latRange, lonRange),
+			zoomControl: true,
+			mapTypeControl: true,
+			scaleControl: false,
+			streetViewControl: false,
+			rotateControl: false,
+			fullscreenControl: false,
+			mapTypeId: google.maps.MapTypeId.SATELLITE,
+			mapTypeControlOptions: {
+				style: google.maps.MapTypeControlStyle.DROPDOWN_MENU,
+				mapTypeIds: [
+					google.maps.MapTypeId.SATELLITE,
+					google.maps.MapTypeId.TERRAIN
+				]
+			}
+		});
+		mapApp.setTilt(0);
+
+		stationsKeys.forEach(function(s) {
+			var marker = new google.maps.Marker({
+				position: {lat: stations[s].lat, lng: stations[s].lon},
+				map: mapApp,
+				title: stations[s].displayNameFull,
+			   draggable: false,
+				icon: { url: getSVGIconURL(stations[s].device, stations[s].selected) }
+			});
+			//var iw = new google.maps.InfoWindow({
+			//	//disableAutoPan: true,
+			//	content: '<b>'+stations[s].displayNameFull+'</b><br>Lat: '+floatToStringLatLon(stations[s].lat)+'<br>Lon: '+floatToStringLatLon(stations[s].lon)+'<br>Depth(s): '+stations[s].depths.join(", ")
+			//});
+			google.maps.event.addListener(marker, "click", function(e) {
+				//stationsKeys.forEach(function(s) {
+				//	stations[s].mapInfoWindow.close();
+				//});
+				//iw.open(mapApp, marker);
+				toggleStation(s);
+			});
+			stations[s]["mapMarker"] = marker;
+			//stations[s]["mapInfoWindow"] = iw;
+		});
+
+		var shapeOptions = {
+			fillColor: "#ffeb3b",
+			fillOpacity: 0.35,
+			strokeColor: "#DAA520",
+			strokeWeight: 3,
+			clickable: false
+		};
+		mapDrawingManager = new google.maps.drawing.DrawingManager({
+			drawingMode: null,
+			drawingControl: true,
+			drawingControlOptions: {
+				position: google.maps.ControlPosition.TOP_RIGHT,
+				drawingModes: [
+					google.maps.drawing.OverlayType.POLYGON,
+					google.maps.drawing.OverlayType.RECTANGLE
+				]
+			},
+			polygonOptions: shapeOptions,
+			rectangleOptions: shapeOptions
+		});
+		mapDrawingManager.setMap(mapApp);
+		google.maps.event.addListener(mapDrawingManager, "overlaycomplete", function(event) {
+			if(event.type != google.maps.drawing.OverlayType.POLYGON && event.type != google.maps.drawing.OverlayType.RECTANGLE) {
+				event.overlay.setMap(null);
+				return;
+			}
+			if(mapPrevOverlay) {
+				mapPrevOverlay.setMap(null);
+				mapPrevOverlay = null;
+			}
+
+			if(event.type == google.maps.drawing.OverlayType.POLYGON) {
+				var path = event.overlay.getPath().getArray().map(function(d) {
+					return [d.lat(), d.lng()];
+				});
+				stationsKeys.forEach(function(s) {
+					var inside = isPointInPoly([stations[s].lat, stations[s].lon], path);
+					if((inside && !stations[s].selected) || (!inside && stations[s].selected)) {
+						toggleStation(s);
+					}
+				});
+			}
+			else { // it has to be a RECTANGLE
+				var bounds = event.overlay.getBounds();
+				stationsKeys.forEach(function(s) {
+					var inside = bounds.contains(new google.maps.LatLng(stations[s].lat, stations[s].lon));
+					if((inside && !stations[s].selected) || (!inside && stations[s].selected)) {
+						toggleStation(s);
+					}
+				});
+			}
+			mapPrevOverlay = event.overlay;
+		});
+	}
+
+
+
+	// ***
+	// *** Functions for loading/displaying time series
+	// ***
+
+	function loadAndDisplayTimeSeries(ts, depth) {
+		var effectiveDepth = depth!==undefined ? depth : ts.depth;
+		var depthStr = effectiveDepth.toString();
+		if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].data !== null) {
+			addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
+			return;
+		}
+		else if(ts.data.hasOwnProperty(depthStr) && ts.data[depthStr].ajaxLoading) {
+			return;
+		}
+		else {
+			ts.data[depthStr] = {
+				ajaxLoading: true,
+				plotGroup: null,
+				uniquePlotID : "",
+				data : null
+			};
+			$.ajax({
+				url: "/timeseries/"+ts.tsType+"/"+ts.station+"/"+ts.dataType+"/"+ts.depth + (depth!==undefined ? "?extractDepth="+depthStr : ""),
+				type: "GET",
+				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
+				success: function(retdata) {
+					ts.data[depthStr].ajaxLoading = false;
+					var refDate = new Date(ts.t_reference);
+					if(ts.tsType == "scalar") {
+						ts.data[depthStr].data = retdata.data.map(function(d) {
+							var tsDate = new Date(refDate);
+							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
+							return [tsDate, d[1]];
+						});
+						
+					}
+					else {
+						ts.data[depthStr].data = retdata.data.map(function(d) {
+							var tsDate = new Date(refDate);
+							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
+							return [tsDate, d[1], d[2], d[3]];
+						});
+					}
+					addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
+				},
+				error: function() {
+					ts.data[depthStr].data = null;
+					ts.data[depthStr].ajaxLoading = false;
+				}
+			});
+		}
+	}
+
+	function getUniquePlotID(ts, depth) {
+		return ts.tsType + "-" + (groupBy == "type" ? ts.station : ts.region+"-"+ts.dataType) + "-" + ts.depth + (depth!==undefined ? ("-"+depth) : "");
+	}
+
+	function addTimeSeriesToAppropriatePlotGroup(ts, depth) {
+		var depthStr = depth.toString();
+		if(ts.data[depthStr].data === null || ts.data[depthStr].plotGroup !== null) {
+			return;
+		}
+		var pg = (groupBy == "type" ? dataTypes[ts.dataType].plotGroup : devices[ts.device].plotGroup);
+		if(pg === null) {
+			return;
+		}
+		ts.data[depthStr].uniquePlotID = getUniquePlotID(ts, depth);
+		ts.data[depthStr].plotGroup = pg;
+		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+depth+" m";
+		var yAxisLabel = "";
+		if(groupBy == "type" || numOfGraphs == "multiple") {
+			yAxisLabel = dataTypes[ts.dataType].displayNameWithUnit;
+		}
+		pg.addDataSet(
+			ts.tsType == "scalar" ? "CanvasTimeSeriesPlot" : "CanvasVectorSeriesPlot",
+			getUniquePlotID(ts, depth), 
+			displayName, 
+			ts.data[depthStr].data, 
+			getPlotColor(ts.region, ts.station, ts.dataType, depth), {
+				"yAxisLabel": yAxisLabel
+			});
+	}
+
+	function isTimeSeriesToBeShown(ts) {
+		return (dataTypes[ts.dataType].selected
+			&& stations[ts.station].selected
+			&& currentDepthRanges.some(function(range) {
+				return (range[0] <= ts.depth && ts.depth <= range[1]);
+			}));
+	}
+
+	function addAndRemoveTimeSeries() {
+		timeseries.forEach(function(ts) {
+			var isToBeShown = isTimeSeriesToBeShown(ts);
+			
+			if(isToBeShown) {
+				if(ts.tsType == "scalar" && ts.data[ts.depth.toString()].plotGroup === null) {
+						loadAndDisplayTimeSeries(ts, ts.depth);
+				}
+				else {
+					Object.keys(ts.data).forEach(function(d) {
+						if(ts.data[d].plotGroup !== null && adcpDepths.indexOf(parseInt(d)) < 0) {
+							var ds = ts.data[d];
+							ds.plotGroup.removeDataSet(ds.uniquePlotID);
+							ds.plotGroup = null;
+							ds.uniquePlotID = "";
+						}
+					});
+					adcpDepths.forEach(function(d) {
+						if(!ts.data.hasOwnProperty(d.toString())
+						|| ts.data[d.toString()].plotGroup === null) {
+							loadAndDisplayTimeSeries(ts, d);
+						}
+					});
+					if(adcpDepths.length == 0) {
+						loadAndDisplayTimeSeries(ts, ts.depth);
+					}
+				}
+			}
+			else {
+				if(ts.tsType == "scalar" || adcpDepths.length == 0) {
+					if(ts.data[ts.depth.toString()].plotGroup !== null) {
+						var ds = ts.data[ts.depth.toString()];
+						ds.plotGroup.removeDataSet(ds.uniquePlotID);
+						ds.plotGroup = null;
+						ds.uniquePlotID = "";
+					}
+				}
+				else {
+					Object.keys(ts.data).forEach(function(d) {
+						if(ts.data[d].plotGroup !== null) {
+							var ds = ts.data[d];
+							ds.plotGroup.removeDataSet(ds.uniquePlotID);
+							ds.plotGroup = null;
+							ds.uniquePlotID = "";
+						}
+					});
+				}
+			}
+		});
+	}
 </script>

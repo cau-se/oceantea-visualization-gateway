@@ -1007,8 +1007,10 @@
 			var isToBeShown = isTimeSeriesToBeShown(ts);
 			
 			if(isToBeShown) {
-				if(ts.tsType == "scalar" && ts.data[ts.depth.toString()].plotGroup === null) {
+				if(ts.tsType == "scalar") {
+					if(ts.data[ts.depth.toString()].plotGroup === null) {
 						loadAndDisplayTimeSeries(ts, ts.depth);
+					}
 				}
 				else {
 					Object.keys(ts.data).forEach(function(d) {

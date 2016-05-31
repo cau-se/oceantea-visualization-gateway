@@ -785,7 +785,7 @@
 	
 	function getMapZoomValue(rangeLat, rangeLon) {
 		var dist = Math.max(Math.max(rangeLat[1]-rangeLat[0], rangeLon[1]-rangeLon[0]), 0.01);
-		var value = Math.floor(Math.log(dist/180) / Math.log(0.5));
+		var value = Math.max(Math.floor(Math.log(dist/180) / Math.log(0.5)), 1);
 		return value;
 	}
 	

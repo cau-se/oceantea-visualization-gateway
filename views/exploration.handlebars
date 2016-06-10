@@ -4,26 +4,44 @@
 		<div id="settingsPanel" class="panel panel-default">
 			<div class="panel-heading" id="settingsPanelHeader">Filters and Settings</div>
 			<div class="panel-body" id="settingsPanelBody">
-				<div class="btn-group controlBtnGroup" id="filtersRegionsGroup">
-					<button type="button" id="filtersRegionsGroupLabel" class="btn btn-default disabled">Regions</button>
-				</div>
+				<p class="otsvisSelectionTable">
+					<div class="otsvisSelectionTableRow">
+						<div class="otsvisSelectionTableCell otsvisLabelSection">
+							<button type="button" id="filtersRegionsGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Regions</button>
+						</div>
+						<div id="filtersRegionsGroup" class="otsvisSelectionTableCell">
+						</div>
+					</div>
+				</p>
 
-				<div class="btn-group controlBtnGroup" id="filtersDevicesGroup">
-					<button type="button" id="filtersDevicesGroupLabel" class="btn btn-default disabled">Devices</button>
-				</div>
+				<p class="otsvisSelectionTable">
+					<div class="otsvisSelectionTableRow">
+						<div class="otsvisSelectionTableCell otsvisLabelSection">
+							<button type="button" id="filtersDevicesGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Devices</button>
+						</div>
+						<div id="filtersDevicesGroup" class="otsvisSelectionTableCell">
+						</div>
+					</div>
+				</p>
 
-				<div class="btn-group controlBtnGroup" id="filtersMeasurementsGroup">
-					<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled">Measurements</button>
-				</div>
+				<p class="otsvisSelectionTable">
+					<div class="otsvisSelectionTableRow">
+						<div class="otsvisSelectionTableCell otsvisLabelSection">
+							<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Measurements</button>
+						</div>
+						<div id="filtersMeasurementsGroup" class="otsvisSelectionTableCell">
+						</div>
+					</div>
+				</p>
 
-				<div id="depthFilters" style="width: 100%;">
-				</div>
+				<p class="btnGroupContainer"><div id="depthFilters" style="width: 100%;">
+				</div></p>
 				
-				<div id="adcpDepthFilters" class="btn-group input-group">
-					<button type="button" id="adcpDepthFiltersLabel" class="btn btn-default disabled">ADCP Depths</button>
+				<p class="btnGroupContainer"><div id="adcpDepthFilters" class="btn-group input-group controlBtnGroup" style="display: inline-block;">
+					<button type="button" id="adcpDepthFiltersLabel" class="btn btn-default disabled otsvisLabelSection">ADCP Depths</button>
 					<input type="text" placeholder="Depth [m]" id="inputADCPDepth" class="form-control" style="width: 9em">
 					<button type="button" id="btnADCPDepthAdd" class="btn btn-primary"><span class="fa fa-plus"></span></button>
-				</div>
+				</div></p>
 
 				<div class="btn-group controlBtnGroup">
 					<button type="button" class="btn btn-default disabled">#Plots</button>
@@ -36,7 +54,7 @@
 					<button type="button" id="btnGroupByType" class="btn btn-primary active">Measurement</button>
 					<button type="button" id="btnGroupByDevice" class="btn btn-primary">Device</button>
 				</div>
-
+				
 				<div class="btn-group controlBtnGroup">
 					<button type="button" class="btn btn-default disabled">Zoom/Pan</button>
 					<button type="button" id="btnZoomBoth" class="btn btn-primary active">X and Y</button>
@@ -62,8 +80,8 @@
 	var groupBy = "type"; // or "device"
 	var numOfGraphs = "multiple"; // or "single"
 
-	var btnClassActivated = "btn btn-primary active";
-	var btnClassDeactivated = "btn btn-primary";
+	var btnClassActivated = "btn btn-primary active otsvisSelectionBtn";
+	var btnClassDeactivated = "btn btn-primary otsvisSelectionBtn";
 	var plotConfig = {
 		markerLineWidth: 5,
 		plotLineWidth: 3
@@ -224,7 +242,7 @@
 				.append('<span class="fa fa-times"></span> <b>Cannot load Google Maps API!</b>');
 		}
 
-		$("#filtersRegionsGroup button[id!='filtersRegionsGroupLabel']").remove();
+		$("#filtersRegionsGroup button").remove();
 		regionsKeys.forEach(function(region) {
 			$("#filtersRegionsGroup").append('<button type="button" id="btnRegion'+region+'" class="'+btnClassDeactivated+'">'+regions[region].printName+'</button>');
 			$("#btnRegion"+region).click(function() {
@@ -235,7 +253,7 @@
 			});
 		});
 
-		$("#filtersDevicesGroup button[id!='filtersDevicesGroupLabel']").remove();
+		$("#filtersDevicesGroup button").remove();
 		devicesKeys.forEach(function(device) {
 			$("#filtersDevicesGroup").append('<button type="button" id="btnDevice'+device+'" class="'+btnClassDeactivated+'">'+device+'</button>');
 			$("#btnDevice"+device).click(function() {
@@ -243,7 +261,7 @@
 			});
 		});
 
-		$("#filtersMeasurementsGroup button[id!='filtersMeasurementsGroupLabel']").remove();
+		$("#filtersMeasurementsGroup button").remove();
 		dataTypesKeys.forEach(function(type) {
 			$("#filtersMeasurementsGroup").append('<button type="button" id="btnMeasurementType'+type+'" class="'+btnClassDeactivated+'">'+dataTypes[type].displayName+'</button>');
 			$("#btnMeasurementType"+type).click(function() {
@@ -399,7 +417,7 @@
 	function addDepthSlider() {
 		var index = depthSliders.length;
 		$("#depthFilters").append('<div class="btn-group controlBtnGroup" id="filtersDepthGroup'+index+'" style="width: 100%;">\
-	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled">Depth Interval #'+(index+1)+'</button>\
+	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled otsvisLabelSection">Depth Interval #'+(index+1)+'</button>\
 	<button type="button" id="filtersDepthGroupAdd'+index+'" class="btn btn-primary"><span class="fa fa-plus"></span></button>\
 	<div class="form-control" id="filtersDepthSliderContainer'+index+'" style="text-align: center;"><input id="sliderDepth'+index+'" type="text"></div>\
 </div>');

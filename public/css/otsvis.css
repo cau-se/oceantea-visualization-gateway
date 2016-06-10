@@ -4,13 +4,44 @@
 }
 
 .controlBtnGroup {
-	margin: 7px 15px 7px 0px;
+	margin: 1px 15px 1px 0px;
 }
 
 .slider-selection {
 	background: #BABABA;
 }
 
-.otsvisTableCell {
-	padding: 0 15px 0 15px;
+.otsvisSelectionTable {
+	width: 100%;
+	display: table;
+	margin: -3px 0px 0px 0px;
+}
+
+.otsvisSelectionTableRow {
+	width: 100%;
+	display: table-row;
+}
+
+.otsvisSelectionTableCell {
+	display: table-cell;
+}
+
+.otsvisLabelSection {
+	text-align: left;
+	width: 10em;
+}
+
+.otsvisBtnSection {
+	text-align: left;
+	float: left;
+}
+
+.btnGroupContainer {
+	display: block;
+	margin: 0px;
+	padding: 0px;
+}
+
+.otsvisSelectionBtn {
+	margin: 3px;
 }

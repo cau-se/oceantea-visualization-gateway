@@ -80,8 +80,10 @@
 	var groupBy = "type"; // or "device"
 	var numOfGraphs = "multiple"; // or "single"
 
-	var btnClassActivated = "btn btn-primary active otsvisSelectionBtn";
-	var btnClassDeactivated = "btn btn-primary otsvisSelectionBtn";
+	var btnClassActivated = "btn btn-primary active";
+	var btnClassDeactivated = "btn btn-primary";
+	var slectionBtnClassActivated = "btn btn-primary active otsvisSelectionBtn";
+	var slectionBtnClassDeactivated = "btn btn-primary otsvisSelectionBtn";
 	var plotConfig = {
 		markerLineWidth: 5,
 		plotLineWidth: 3
@@ -244,7 +246,7 @@
 
 		$("#filtersRegionsGroup button").remove();
 		regionsKeys.forEach(function(region) {
-			$("#filtersRegionsGroup").append('<button type="button" id="btnRegion'+region+'" class="'+btnClassDeactivated+'">'+regions[region].printName+'</button>');
+			$("#filtersRegionsGroup").append('<button type="button" id="btnRegion'+region+'" class="'+selectionBtnClassDeactivated+'">'+regions[region].printName+'</button>');
 			$("#btnRegion"+region).click(function() {
 				if(!regions[region].selected) {
 					centerMapOnRegion(region);
@@ -255,7 +257,7 @@
 
 		$("#filtersDevicesGroup button").remove();
 		devicesKeys.forEach(function(device) {
-			$("#filtersDevicesGroup").append('<button type="button" id="btnDevice'+device+'" class="'+btnClassDeactivated+'">'+device+'</button>');
+			$("#filtersDevicesGroup").append('<button type="button" id="btnDevice'+device+'" class="'+selectionBtnClassDeactivated+'">'+device+'</button>');
 			$("#btnDevice"+device).click(function() {
 				toggleDevice(device);
 			});
@@ -263,7 +265,7 @@
 
 		$("#filtersMeasurementsGroup button").remove();
 		dataTypesKeys.forEach(function(type) {
-			$("#filtersMeasurementsGroup").append('<button type="button" id="btnMeasurementType'+type+'" class="'+btnClassDeactivated+'">'+dataTypes[type].displayName+'</button>');
+			$("#filtersMeasurementsGroup").append('<button type="button" id="btnMeasurementType'+type+'" class="'+selectionBtnClassDeactivated+'">'+dataTypes[type].displayName+'</button>');
 			$("#btnMeasurementType"+type).click(function() {
 				toggleMeasurement(type);
 			});
@@ -444,7 +446,7 @@
 	function toggleRegion(region) {
 		regions[region].selected = !regions[region].selected;
 		if(regions[region].selected) {
-			$("#btnRegion"+region).prop("class", btnClassActivated);
+			$("#btnRegion"+region).prop("class", selectionBtnClassActivated);
 			stationsKeys.forEach(function(station) {
 				if(stations[station].region == region && !stations[station].selected && devices[stations[station].device].selected) {
 					stations[station].selected = true;
@@ -454,7 +456,7 @@
 			addAndRemoveTimeSeries();
 		}
 		else {
-			$("#btnRegion"+region).prop("class", btnClassDeactivated);
+			$("#btnRegion"+region).prop("class", selectionBtnClassDeactivated);
 			stationsKeys.forEach(function(station) {
 				if(stations[station].region == region && stations[station].selected) {
 					stations[station].selected = false;
@@ -468,7 +470,7 @@
 	function toggleDevice(device) {
 		devices[device].selected = !devices[device].selected;
 		if(devices[device].selected) {
-			$("#btnDevice"+device).prop("class", btnClassActivated);
+			$("#btnDevice"+device).prop("class", selectionBtnClassActivated);
 			stationsKeys.forEach(function(station) {
 				if(stations[station].device == device && !stations[station].selected && regions[stations[station].region].selected) {
 					stations[station].selected = true;
@@ -483,7 +485,7 @@
 			}
 		}
 		else {
-			$("#btnDevice"+device).prop("class", btnClassDeactivated);
+			$("#btnDevice"+device).prop("class", selectionBtnClassDeactivated);
 			stationsKeys.forEach(function(station) {
 				if(stations[station].device == device && stations[station].selected) {
 					stations[station].selected = false;
@@ -502,7 +504,7 @@
 	function toggleMeasurement(type) {
 		dataTypes[type].selected = !dataTypes[type].selected;
 		if(dataTypes[type].selected) {
-			$("#btnMeasurementType"+type).prop("class", btnClassActivated);
+			$("#btnMeasurementType"+type).prop("class", selectionBtnClassActivated);
 			if(groupBy == "type") {
 				addNonexistentGroups();
 			}
@@ -511,7 +513,7 @@
 			}
 		}
 		else {
-			$("#btnMeasurementType"+type).prop("class", btnClassDeactivated);
+			$("#btnMeasurementType"+type).prop("class", selectionBtnClassDeactivated);
 			if(groupBy == "type") {
 				removeEmptyGroups();
 			}

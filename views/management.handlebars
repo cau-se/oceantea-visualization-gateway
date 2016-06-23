@@ -377,16 +377,16 @@
 	<div class="panel-body">
 		<table class="table-striped" id="timeSeriesTable" style="min-width: 900px; margin: auto;">
 			<tr id="timeSeriesTableHeader" style="height: 3.5em;">
-				<th class="otsvisTableCell">Station</th>
-				<th class="otsvisTableCell">Region</th>
-				<th class="otsvisTableCell">Device</th>
-				<th class="otsvisTableCell">Lat</th>
-				<th class="otsvisTableCell">Lon</th>
-				<th class="otsvisTableCell">Depth</th>
-				<th class="otsvisTableCell">Series Type</th>
-				<th class="otsvisTableCell">Data Type</th>
-				<th class="otsvisTableCell">Reference Time</th>
-				<th class="otsvisTableCell"></th>
+				<th class="oceanteaTableCell">Station</th>
+				<th class="oceanteaTableCell">Region</th>
+				<th class="oceanteaTableCell">Device</th>
+				<th class="oceanteaTableCell">Lat</th>
+				<th class="oceanteaTableCell">Lon</th>
+				<th class="oceanteaTableCell">Depth</th>
+				<th class="oceanteaTableCell">Series Type</th>
+				<th class="oceanteaTableCell">Data Type</th>
+				<th class="oceanteaTableCell">Reference Time</th>
+				<th class="oceanteaTableCell"></th>
 			</tr>
 		</table>
 	</div>
@@ -421,16 +421,16 @@
 		var tsID = ts.tsType+"-"+ts.station+"-"+ts.dataType+"-"+ts.depth;
 		var sameStation = (prevTS.station===ts.station);
 		$("#timeSeriesTable").append('<tr style="height: 3.5em;" id="MTSrowID'+tsID+'">\
-			<td class="otsvisTableCell">'+(sameStation ? '' : ts.station)+'</td>\
-			<td class="otsvisTableCell">'+(sameStation && prevTS.region===ts.region ? '' : ts.regionPrintName)+'</td>\
-			<td class="otsvisTableCell">'+(sameStation && prevTS.device===ts.device ? '' : ts.device)+'</td>\
-			<td class="otsvisTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lat, ts.lat) ? '' : floatToStringLatLon(ts.lat))+'</td>\
-			<td class="otsvisTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lon, ts.lon) ? '' : floatToStringLatLon(ts.lon))+'</td>\
-			<td class="otsvisTableCell">'+(sameStation && prevTS.depth===ts.depth ? '' : ts.depth)+'</td>\
-			<td class="otsvisTableCell">'+ts.tsType+'</td>\
-			<td class="otsvisTableCell">'+ts.dataType+'</td>\
-			<td class="otsvisTableCell">'+(sameStation &&prevTS.t_reference===ts.t_reference ? '' : ts.t_reference)+'</td>\
-			<td class="otsvisTableCell"><button class="btn btn-danger" id="MTSbtnRemoveID'+tsID+'" style="margin-top: 7px; margin-bottom: -11px;"><span class="fa fa-trash"></span></button> <span id="MTSmessageID'+tsID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
+			<td class="oceanteaTableCell">'+(sameStation ? '' : ts.station)+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation && prevTS.region===ts.region ? '' : ts.regionPrintName)+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation && prevTS.device===ts.device ? '' : ts.device)+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lat, ts.lat) ? '' : floatToStringLatLon(ts.lat))+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lon, ts.lon) ? '' : floatToStringLatLon(ts.lon))+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation && prevTS.depth===ts.depth ? '' : ts.depth)+'</td>\
+			<td class="oceanteaTableCell">'+ts.tsType+'</td>\
+			<td class="oceanteaTableCell">'+ts.dataType+'</td>\
+			<td class="oceanteaTableCell">'+(sameStation &&prevTS.t_reference===ts.t_reference ? '' : ts.t_reference)+'</td>\
+			<td class="oceanteaTableCell"><button class="btn btn-danger" id="MTSbtnRemoveID'+tsID+'" style="margin-top: 7px; margin-bottom: -11px;"><span class="fa fa-trash"></span></button> <span id="MTSmessageID'+tsID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
 		</tr>');
 		$("#MTSbtnRemoveID"+tsID).click(function() {
 			$(this)

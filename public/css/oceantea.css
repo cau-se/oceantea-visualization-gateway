@@ -11,27 +11,27 @@
 	background: #BABABA;
 }
 
-.otsvisSelectionTable {
+.oceanteaSelectionTable {
 	width: 100%;
 	display: table;
 	margin: -3px 0px 0px 0px;
 }
 
-.otsvisSelectionTableRow {
+.oceanteaSelectionTableRow {
 	width: 100%;
 	display: table-row;
 }
 
-.otsvisSelectionTableCell {
+.oceanteaSelectionTableCell {
 	display: table-cell;
 }
 
-.otsvisLabelSection {
+.oceanteaLabelSection {
 	text-align: left;
 	width: 10em;
 }
 
-.otsvisBtnSection {
+.oceanteaBtnSection {
 	text-align: left;
 	float: left;
 }
@@ -42,6 +42,6 @@
 	padding: 0px;
 }
 
-.otsvisSelectionBtn {
+.oceanteaSelectionBtn {
 	margin: 3px;
 }

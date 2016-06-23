@@ -4,32 +4,32 @@
 		<div id="settingsPanel" class="panel panel-default">
 			<div class="panel-heading" id="settingsPanelHeader">Filters and Settings</div>
 			<div class="panel-body" id="settingsPanelBody">
-				<p class="otsvisSelectionTable">
-					<div class="otsvisSelectionTableRow">
-						<div class="otsvisSelectionTableCell otsvisLabelSection">
-							<button type="button" id="filtersRegionsGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Regions</button>
+				<p class="oceanteaSelectionTable">
+					<div class="oceanteaSelectionTableRow">
+						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
+							<button type="button" id="filtersRegionsGroupLabel" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Regions</button>
 						</div>
-						<div id="filtersRegionsGroup" class="otsvisSelectionTableCell">
-						</div>
-					</div>
-				</p>
-
-				<p class="otsvisSelectionTable">
-					<div class="otsvisSelectionTableRow">
-						<div class="otsvisSelectionTableCell otsvisLabelSection">
-							<button type="button" id="filtersDevicesGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Devices</button>
-						</div>
-						<div id="filtersDevicesGroup" class="otsvisSelectionTableCell">
+						<div id="filtersRegionsGroup" class="oceanteaSelectionTableCell">
 						</div>
 					</div>
 				</p>
 
-				<p class="otsvisSelectionTable">
-					<div class="otsvisSelectionTableRow">
-						<div class="otsvisSelectionTableCell otsvisLabelSection">
-							<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled otsvisLabelSection otsvisSelectionBtn">Measurements</button>
+				<p class="oceanteaSelectionTable">
+					<div class="oceanteaSelectionTableRow">
+						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
+							<button type="button" id="filtersDevicesGroupLabel" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Devices</button>
 						</div>
-						<div id="filtersMeasurementsGroup" class="otsvisSelectionTableCell">
+						<div id="filtersDevicesGroup" class="oceanteaSelectionTableCell">
+						</div>
+					</div>
+				</p>
+
+				<p class="oceanteaSelectionTable">
+					<div class="oceanteaSelectionTableRow">
+						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
+							<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Measurements</button>
+						</div>
+						<div id="filtersMeasurementsGroup" class="oceanteaSelectionTableCell">
 						</div>
 					</div>
 				</p>
@@ -38,7 +38,7 @@
 				</div></p>
 				
 				<p class="btnGroupContainer"><div id="adcpDepthFilters" class="btn-group input-group controlBtnGroup" style="display: inline-block;">
-					<button type="button" id="adcpDepthFiltersLabel" class="btn btn-default disabled otsvisLabelSection">ADCP Depths</button>
+					<button type="button" id="adcpDepthFiltersLabel" class="btn btn-default disabled oceanteaLabelSection">ADCP Depths</button>
 					<input type="text" placeholder="Depth [m]" id="inputADCPDepth" class="form-control" style="width: 9em">
 					<button type="button" id="btnADCPDepthAdd" class="btn btn-primary"><span class="fa fa-plus"></span></button>
 				</div></p>
@@ -82,8 +82,8 @@
 
 	var btnClassActivated = "btn btn-primary active";
 	var btnClassDeactivated = "btn btn-primary";
-	var slectionBtnClassActivated = "btn btn-primary active otsvisSelectionBtn";
-	var slectionBtnClassDeactivated = "btn btn-primary otsvisSelectionBtn";
+	var selectionBtnClassActivated = "btn btn-primary active oceanteaSelectionBtn";
+	var selectionBtnClassDeactivated = "btn btn-primary oceanteaSelectionBtn";
 	var plotConfig = {
 		markerLineWidth: 5,
 		plotLineWidth: 3
@@ -419,7 +419,7 @@
 	function addDepthSlider() {
 		var index = depthSliders.length;
 		$("#depthFilters").append('<div class="btn-group controlBtnGroup" id="filtersDepthGroup'+index+'" style="width: 100%;">\
-	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled otsvisLabelSection">Depth Interval #'+(index+1)+'</button>\
+	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled oceanteaLabelSection">Depth Interval #'+(index+1)+'</button>\
 	<button type="button" id="filtersDepthGroupAdd'+index+'" class="btn btn-primary"><span class="fa fa-plus"></span></button>\
 	<div class="form-control" id="filtersDepthSliderContainer'+index+'" style="text-align: center;"><input id="sliderDepth'+index+'" type="text"></div>\
 </div>');

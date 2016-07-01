@@ -103,7 +103,20 @@
 	$(document).ready(function() {
 		$('input[name="timeSeriesType"]:radio').change(function() {
 			if($("#inputTimeSeriesTypeADCP").prop("checked")) {
-				$("#inputTimeSeriesTypeGroup").after('<div class="form-group" id="inputFirstBinGroup">\
+				$("#inputTimeSeriesTypeGroup").after('<div class="form-group" id="inputDirectionGroup">\
+	<label for="inputDirection" class="control-label col-xs-3">ADCP Direction</label>\
+	<div class="col-xs-9">\
+		<div id="inputDirection" style="margin-left: 20px;">\
+			<label class="radio">\
+				<input type="radio" name="adcpDirection" value="up" checked="checked"> Up\
+			</label>\
+			<label class="radio">\
+				<input type="radio" name="adcpDirection" value="down"> Down\
+			</label>\
+		</div>\
+	</div>\
+</div>\
+<div class="form-group" id="inputFirstBinGroup">\
 	<label for="inputFirstBin" class="control-label col-xs-3">First ADCP Bin Height</label>\
 	<div class="col-xs-9">\
 		<input type="text" class="form-control" id="inputFirstBinHeight" name="adcpFirstBinHeight" placeholder="Positive rational number in meters">\
@@ -189,6 +202,9 @@
 			$("#formCSVUpload :input[type=text]").each(function() {
 				formData.append($(this).prop("name"), $(this).val());
 			});
+			if($('input:radio[name="adcpDirection"]').length > 0) {
+				formData.append("adcpDirection", $('input:radio[name="adcpDirection"]:checked').val());
+			}
 			formData.append("timeSeriesType", $('input:radio[name="timeSeriesType"]:checked').val());
 			formData.append("autoConvert", $('input:checkbox[name="autoConvert"]').is(":checked"));
 			formData.append($("#inputDataFile").prop("name"), $("#inputDataFile")[0].files[0], "upload.csv");

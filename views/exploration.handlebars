@@ -1003,7 +1003,12 @@
 		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+depth+" m";
 		var yAxisLabel = "";
 		if(groupBy == "type" || numOfGraphs == "multiple") {
-			yAxisLabel = dataTypes[ts.dataType].displayNameWithUnit;
+			if(ts.tsType == "scalar") {
+				yAxisLabel = dataTypes[ts.dataType].displayNameWithUnit;
+			}
+			else {
+				yAxisLabel = "Depth [m]";
+			}
 		}
 		pg.addDataSet(
 			ts.tsType == "scalar" ? "CanvasTimeSeriesPlot" : "CanvasVectorSeriesPlot",

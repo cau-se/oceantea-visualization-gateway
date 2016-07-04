@@ -26,7 +26,8 @@ function CanvasDataPlot(parentElement, canvasDimensions, config) {
 	this.updateViewCallback = config.updateViewCallback || null;
 	this.parent = parentElement;
 
-	this.invertedYAxis = config.invertedYAxis || false;
+	this.disableLegend = config.disableLegend || false;
+	this.invertYAxis = config.invertYAxis || false;
 	this.gridColor = config.gridColor || "#DFDFDF";
 	this.markerLineWidth = config.markerLineWidth || 1;
 	this.markerRadius = config.markerRadius || 3.0;
@@ -339,7 +340,7 @@ CanvasDataPlot.prototype.setupXScaleAndAxis = function() {
 CanvasDataPlot.prototype.setupYScaleAndAxis = function() {
 	this.yScale = d3.scale.linear()
 		.domain(this.calculateYDomain())
-		.range(this.invertedYAxis ? [0, this.height] : [this.height, 0])
+		.range(this.invertYAxis ? [0, this.height] : [this.height, 0])
 		.nice();
 
 	this.yAxis = d3.svg.axis()
@@ -419,6 +420,9 @@ CanvasDataPlot.prototype.removeTooltip = function() {
 };
 
 CanvasDataPlot.prototype.updateLegend = function() {
+	if(this.disableLegend) {
+		return;
+	}
 	if(this.legend) {
 		this.legend.remove();
 		this.legend = null;
@@ -736,8 +740,8 @@ function CanvasVectorSeriesPlot(parentElement, canvasDimensions, config) {
 	
 	var configCopy = CanvasPlot_shallowObjectCopy(config);
 	configCopy["showTooltips"] = false;
-	if(!("invertedYAxis" in configCopy)) {
-		configCopy["invertedYAxis"] = true;
+	if(!("invertYAxis" in configCopy)) {
+		configCopy["invertYAxis"] = true;
 	}
 	
 	CanvasTimeSeriesPlot.call(this, parentElement, canvasDimensions, configCopy);
@@ -792,6 +796,7 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 	this.canvas.lineWidth = this.plotLineWidth;
 	this.canvas.strokeStyle = this.dataColors[dataIndex];
 	var magScale = this.getMagnitudeScale();
+	var tipSize = 10*magScale;
 	for(var i=iStart+1; i<=iEnd; i=i+drawEvery) {
 		var startX = this.xScale(d[i][0]);
 		var startY = this.yScale(d[i][1]);
@@ -810,7 +815,6 @@ CanvasVectorSeriesPlot.prototype.drawDataSet = function(dataIndex) {
 		this.canvas.lineTo(endX, endY);
 		this.canvas.stroke();
 		
-		var tipSize = 10*magScale;
 		this.canvas.beginPath();
 		this.canvas.moveTo(startX+(mag-tipSize)*cosDir - 0.5*tipSize*sinDir,
 			startY-((mag-tipSize)*sinDir + 0.5*tipSize*cosDir));

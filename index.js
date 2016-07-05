@@ -27,6 +27,7 @@ const exphbs  = require("express-handlebars");
 const validator  = require("validator");
 const authClient = require("./auth_client");
 const httpClient = require("./http_client");
+const GMapsKey = require("./gmaps_key");
 
 const proxyPort = 3333;
 const appPort = 3334;
@@ -64,6 +65,7 @@ app.get("/:dummy(index.html)?", function (req, res) {
 	res.render("exploration", {
 		pagetitle : "Exploration",
 		authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
+		gMapsKey : GMapsKey.key,
 		navExploration : true,
 		libBootstrapSlider : true,
 		libFontAwesome : true,

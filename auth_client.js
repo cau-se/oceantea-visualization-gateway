@@ -14,7 +14,7 @@
 
 const http = require("http");
 
-const authServer = "localhost";
+const authServer = "127.0.0.1";
 const authPort = 3332;
 const authTimeout = 2000;
 

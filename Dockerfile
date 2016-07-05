@@ -1,4 +1,4 @@
-FROM node:6-onbuild
+FROM node:onbuild
 MAINTAINER Arne Johanson
 
 EXPOSE 3333

@@ -171,6 +171,9 @@
 						uniquePlotID : "",
 						data : null
 					};
+					if(ts.tsType === "adcp") {
+						ts.data[ts.depth.toString()]["adcpDirection"] = ts.adcpDirection;
+					}
 					//ts["ajaxLoading"] = false;
 					//ts["plotGroup"] = null;
 					//ts["uniquePlotID"] = "";
@@ -974,6 +977,7 @@
 							tsDate.setUTCSeconds(tsDate.getUTCSeconds()+d[0]);
 							return [tsDate, d[1], d[2], d[3]];
 						});
+						ts.data[depthStr]["adcpDirection"] = (effectiveDepth <= ts.depth ? "up" : "down");
 					}
 					addTimeSeriesToAppropriatePlotGroup(ts, effectiveDepth);
 				},
@@ -1000,7 +1004,11 @@
 		}
 		ts.data[depthStr].uniquePlotID = getUniquePlotID(ts, depth);
 		ts.data[depthStr].plotGroup = pg;
-		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit)+" @ "+depth+" m";
+		var displayName = (groupBy == "type" ? stations[ts.station].displayNameFull : stations[ts.station].regionPrintName+", "+dataTypes[ts.dataType].displayNameWithUnit);
+		if(ts.data[depthStr].hasOwnProperty("adcpDirection")) {
+			displayName = displayName+" "+ts.data[depthStr].adcpDirection;	
+		}
+		displayName = displayName+" @ "+depth+" m";
 		var yAxisLabel = "";
 		if(groupBy == "type" || numOfGraphs == "multiple") {
 			if(ts.tsType == "scalar") {

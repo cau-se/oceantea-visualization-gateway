@@ -4,7 +4,7 @@
 }
 
 .controlBtnGroup {
-	margin: 1px 15px 1px 0px;
+	margin: 3px 15px 3px 3px;
 }
 
 .slider-selection {
@@ -28,7 +28,7 @@
 
 .oceanteaLabelSection {
 	text-align: left;
-	width: 10em;
+	width: 9.75em;
 }
 
 .oceanteaBtnSection {
@@ -36,12 +36,7 @@
 	float: left;
 }
 
-.btnGroupContainer {
-	display: block;
-	margin: 0px;
-	padding: 0px;
-}
-
 .oceanteaSelectionBtn {
 	margin: 3px;
 }
+

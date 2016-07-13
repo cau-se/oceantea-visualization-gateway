@@ -27,21 +27,38 @@
 				<p class="oceanteaSelectionTable">
 					<div class="oceanteaSelectionTableRow">
 						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
-							<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Measurements</button>
+							<button type="button" id="filtersMeasurementsGroupLabel" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Parameters</button>
 						</div>
 						<div id="filtersMeasurementsGroup" class="oceanteaSelectionTableCell">
 						</div>
 					</div>
 				</p>
 
-				<p class="btnGroupContainer"><div id="depthFilters" style="width: 100%;">
-				</div></p>
-				
-				<p class="btnGroupContainer"><div id="adcpDepthFilters" class="btn-group input-group controlBtnGroup" style="display: inline-block;">
-					<button type="button" id="adcpDepthFiltersLabel" class="btn btn-default disabled oceanteaLabelSection">ADCP Depths</button>
-					<input type="text" placeholder="Depth [m]" id="inputADCPDepth" class="form-control" style="width: 9em">
-					<button type="button" id="btnADCPDepthAdd" class="btn btn-primary"><span class="fa fa-plus"></span></button>
-				</div></p>
+				<p class="oceanteaSelectionTable">
+					<div class="oceanteaSelectionTableRow">
+						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
+							<button type="button" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">Depth Ranges</button>
+						</div>
+						<div id="depthFilters" class="oceanteaSelectionTableCell" style="width: 100%;">
+						</div>
+					</div>
+				</p>
+
+				<p class="oceanteaSelectionTable">
+					<div class="oceanteaSelectionTableRow">
+						<div class="oceanteaSelectionTableCell oceanteaLabelSection">
+							<button type="button" class="btn btn-default disabled oceanteaLabelSection oceanteaSelectionBtn">ADCP Depths</button>
+						</div>
+						<div id="adcpDepthFilters" class="oceanteaSelectionTableCell">
+							<div id="adcpDepthFiltersAdd" class="btn-group input-group controlBtnGroup oceanteaSelectionBtn" style="display: inline-block;">
+								<input type="text" placeholder="Depth [m]" id="inputADCPDepth" class="form-control" style="width: 7em">
+								<button type="button" id="btnADCPDepthAdd" class="btn btn-primary"><span class="fa fa-plus"></span></button>
+							</div>
+						</div>
+					</div>
+				</p>
+
+				<hr style="margin: 0px 3px 10px 3px; border-color: #ddd;">
 
 				<div class="btn-group controlBtnGroup">
 					<button type="button" class="btn btn-default disabled">#Plots</button>
@@ -415,17 +432,20 @@
 
 	function setDepthSlidersWidth() {
 		var filterWidth = $("#depthFilters").innerWidth();
+		var filterMargin = 15;
+		var sliderMargin = 50;
 		depthSliders.forEach(function(_, i) {
-			$("#sliderDepthSlider"+i).css("width", Math.max(filterWidth - 60 - $("#filtersDepthGroupLabel"+i).outerWidth() - $("#filtersDepthGroupAdd"+i).outerWidth(), 100)+"px");
+			var containerWidth = Math.max(filterWidth - filterMargin - $("#filtersDepthBtn"+i).outerWidth(), 50);
+			$("#filtersDepthSliderContainer"+i).css("width", containerWidth+"px");
+			$("#sliderDepthSlider"+i).css("width", (containerWidth-sliderMargin)+"px");
 		});
 	}
 
 	function addDepthSlider() {
 		var index = depthSliders.length;
-		$("#depthFilters").append('<div class="btn-group controlBtnGroup" id="filtersDepthGroup'+index+'" style="width: 100%;">\
-	<button type="button" id="filtersDepthGroupLabel'+index+'" class="btn btn-default disabled oceanteaLabelSection">Depth Interval #'+(index+1)+'</button>\
-	<button type="button" id="filtersDepthGroupAdd'+index+'" class="btn btn-primary"><span class="fa fa-plus"></span></button>\
+		$("#depthFilters").append('<div class="btn-group input-group controlBtnGroup oceanteaSelectionBtn" id="filtersDepthGroup'+index+'" style="display: inline-block; width: 100%;">\
 	<div class="form-control" id="filtersDepthSliderContainer'+index+'" style="text-align: center;"><input id="sliderDepth'+index+'" type="text"></div>\
+	<button type="button" id="filtersDepthBtn'+index+'" class="btn btn-primary"><span class="fa fa-'+(index==0 ? 'plus' : 'minus')+'"></span></button>\
 </div>');
 		currentDepthRanges.push(depthRange);
 		depthSliders.push($("#sliderDepth"+index).slider({
@@ -442,7 +462,16 @@
 			currentDepthRanges[index] = depthSliders[index].getValue();
 			addAndRemoveTimeSeries();
 		}).data("slider"));
-		$("#filtersDepthGroupAdd"+index).click(addDepthSlider);
+		$("#filtersDepthBtn"+index).click(function() {
+			if(index==0) {
+				addDepthSlider();
+				return;
+			}
+			depthSliders.splice(index, 1);
+			currentDepthRanges.splice(index, 1);
+			$("#filtersDepthGroup"+index).remove();
+			addAndRemoveTimeSeries();
+		});
 		setDepthSlidersWidth();
 		addAndRemoveTimeSeries();
 	}
@@ -657,10 +686,11 @@
 	}
 	
 	function updateADCPDepthButtons() {
-		$("#adcpDepthFilters").find(":button[id!='adcpDepthFiltersLabel'][id!='btnADCPDepthAdd']").remove();
+		$("#adcpDepthFilters").find("div[id!='adcpDepthFiltersAdd']").remove();
 		adcpDepths.forEach(function(d, i) {
-			$("#adcpDepthFilters").append('<button type="button" id="valueADCPDepth'+i+'" class="btn btn-default disabled">'+d+' m</button>\
-<button type="button" id="btnADCPDepth'+i+'Remove" class="btn btn-primary"><span class="fa fa-minus"></span></button>');
+			$("#adcpDepthFilters").append('<div id="valueADCPDepth'+i+'" class="btn-group input-group controlBtnGroup oceanteaSelectionBtn" style="display: inline-block;">\
+	<button type="button" class="btn btn-default disabled">'+d+' m</button>\
+	<button type="button" id="btnADCPDepth'+i+'Remove" class="btn btn-primary"><span class="fa fa-minus"></span></button></div>');
 			$("#btnADCPDepth"+i+"Remove").click(function() {
 				adcpDepths.splice(i, 1);
 				updateADCPDepthButtons();

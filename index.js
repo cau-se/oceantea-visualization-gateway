@@ -42,6 +42,8 @@ const scalarTSServicePort = 3335;
 const vectorTSServiceAddr = localAddr;
 const vectorTSServicePort = 3336;
 
+const spatialAnalysisServiceAddr = localAddr;
+const spatialAnalysisServicePort = 3338;
 
 
 
@@ -248,6 +250,12 @@ function proxyRequest(authToken, userID, req, res) {
 	else if(req.url.indexOf("/convert") === 0) {
 		proxy.web(req, res, {
 			target: "http://"+scalarTSServiceAddr+":"+scalarTSServicePort+"/convert",
+			ignorePath: true
+		});
+	}
+	else if(req.url.indexOf("/bathymetry") === 0) {
+		proxy.web(req, res, {
+			target: "http://"+spatialAnalysisServiceAddr+":"+spatialAnalysisServicePort+req.url,
 			ignorePath: true
 		});
 	}

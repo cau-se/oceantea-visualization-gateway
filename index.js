@@ -253,7 +253,7 @@ function proxyRequest(authToken, userID, req, res) {
 			ignorePath: true
 		});
 	}
-	else if(req.url.indexOf("/bathymetry") === 0) {
+	else if(req.url.indexOf("/bathymetries") === 0) {
 		proxy.web(req, res, {
 			target: "http://"+spatialAnalysisServiceAddr+":"+spatialAnalysisServicePort+req.url,
 			ignorePath: true

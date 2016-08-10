@@ -24,11 +24,13 @@
 				<li{{#if navExploration}} class="active"{{/if}}><a href="/{{#if authToken}}?authToken={{authToken}}{{/if}}">Time Series Exploration</a></li>
 				<li{{#if navSpatialAnalysis}} class="active"{{/if}}><a href="/spatial_analysis.html{{#if authToken}}?authToken={{authToken}}{{/if}}">Spatial Analysis</a></li>
 				<li{{#if navPatternDiscovery}} class="active"{{/if}}><a href="/pattern_discovery.html{{#if authToken}}?authToken={{authToken}}{{/if}}">Temporal Pattern Discovery</a></li>
+				{{{pluginNavTabs activePluginTab authToken}}}
 			</ul>
 		</div>
 	</div>
 
 	{{{body}}}
+	{{{remoteContent}}}
 </div>
 </body>
 </html>

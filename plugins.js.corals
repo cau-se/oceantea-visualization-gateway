@@ -1,0 +1,16 @@
+module.exports = {
+	plugins: [
+		{
+			tabName: "P. arborea Activity",
+			guiURL: "/p_arborea_activity.html",
+			apiPrefix: "/coral_analysis",
+			serviceName: "oceantea-coral-analysis",
+			serviceAddr: "localhost",
+			servicePort: "3340",
+			templateParameters: {
+				libD3js : true,
+				libCanvasPlot: true
+			}
+		}
+	]
+};

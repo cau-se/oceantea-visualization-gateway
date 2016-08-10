@@ -27,7 +27,8 @@ const exphbs  = require("express-handlebars");
 const validator  = require("validator");
 const authClient = require("./auth_client");
 const httpClient = require("./http_client");
-const GMapsKey = require("./gmaps_key");
+const gMapsKey = require("./gmaps_key");
+const pluginDir = require("./plugins");
 
 const proxyPort = 3333;
 const appPort = 3334;
@@ -49,7 +50,18 @@ const spatialAnalysisServicePort = 3338;
 
 
 
-const hbs = exphbs.create({ defaultLayout: "main" });
+const hbs = exphbs.create({
+	defaultLayout: "main",
+	helpers: {
+		pluginNavTabs: function(active, authToken) {
+			var htmlString = "";
+			pluginDir.plugins.forEach(function(p) {
+				htmlString += '<li'+(active===p.serviceName ? ' class="active"' : '' )+'><a href="'+p.guiURL+(authToken ? '?authToken='+authToken : '')+'">'+p.tabName+'</a></li>';
+			});
+			return htmlString;
+		}
+	}
+});
 
 const app = express();
 
@@ -67,7 +79,7 @@ app.get("/:dummy(index.html)?", function (req, res) {
 	res.render("exploration", {
 		pagetitle : "Exploration",
 		authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
-		gMapsKey : GMapsKey.key,
+		gMapsKey : gMapsKey.key,
 		navExploration : true,
 		libBootstrapSlider : true,
 		libFontAwesome : true,
@@ -108,6 +120,23 @@ app.get("/pattern_discovery.html", function (req, res) {
 		pagetitle : "Pattern Discovery",
 		authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
 		navPatternDiscovery : true
+	});
+});
+
+pluginDir.plugins.forEach(function(p) {
+	app.get(p.guiURL, function (req, res) {
+		httpClient.requestResource("GET", p.serviceAddr, p.servicePort, p.apiPrefix+"/static/index.html", 5000, -1, function(status, body) {
+			var params = {
+				pagetitle : p.tabName,
+				authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
+				activePluginTab: p.serviceName,
+				remoteContent: body
+			};
+			for(var tp in p.templateParameters) {
+				params[tp] = p.templateParameters[tp];
+			}
+			res.render("plugin", params);
+		});
 	});
 });
 
@@ -260,6 +289,20 @@ function proxyRequest(authToken, userID, req, res) {
 		});
 	}
 	else {
+		// Is this a plugin URL?
+		const nPlugins = pluginDir.plugins.length;
+		for(var i=0; i<nPlugins; ++i) {
+			const p = pluginDir.plugins[i];
+			if(req.url.indexOf(p.apiPrefix) === 0) {
+				proxy.web(req, res, {
+					target: "http://"+p.serviceAddr+":"+p.servicePort+req.url,
+					ignorePath: true
+				});
+				return;
+			}
+		}
+
+		// If the URL does not match any known prefix, hand it over to the static content service.
 		proxy.web(req, res, {
 			target: "http://"+localAddr+":"+appPort+req.url,
 			ignorePath: true

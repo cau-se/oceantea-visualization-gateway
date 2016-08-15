@@ -32,7 +32,7 @@ const pluginDir = require("./plugins");
 
 const proxyPort = 3333;
 const appPort = 3334;
-const localAddr = "127.0.0.1";
+const localAddr = "localhost";
 
 const authServiceAddr = localAddr;
 const authServicePort = 3332;
@@ -45,6 +45,8 @@ const vectorTSServicePort = 3336;
 
 const spatialAnalysisServiceAddr = localAddr;
 const spatialAnalysisServicePort = 3338;
+
+const acceptAllHosts = process.argv.includes("--acceptAllHosts");
 
 
 
@@ -143,7 +145,7 @@ pluginDir.plugins.forEach(function(p) {
 app.use(express.static("./public"));
 
 
-app.listen(appPort, localAddr, function () {
+app.listen(appPort, acceptAllHosts ? null : localAddr, function () {
 	console.log("Static content app listening on port " + appPort);
 });
 
@@ -317,8 +319,6 @@ proxy.on("error", function (err, req, res) {
 	res.end("Reverse proxy error: "+ err);
 });
 const proxyServer = http.createServer(function(req, res) {
-	// You can define here your custom logic to handle the request 
-	// and then proxy the request.
 	var authToken = null;
 	if(req.headers.hasOwnProperty("x-auth-token")) {
 		authToken = req.headers["x-auth-token"];

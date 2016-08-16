@@ -30,11 +30,14 @@ const httpClient = require("./http_client");
 const gMapsKey = require("./gmaps_key");
 const pluginDir = require("./plugins");
 
+const acceptAllHosts = process.argv.includes("--acceptAllHosts");
+const useDockerHostnames = process.argv.includes("--useDockerHostnames");
+
 const proxyPort = 3333;
 const appPort = 3334;
 const localAddr = "localhost";
 
-const authServiceAddr = localAddr;
+const authServiceAddr = useDockerHostnames ? "oceantea-auth-inst" : localAddr;
 const authServicePort = 3332;
 
 const scalarTSServiceAddr = localAddr;
@@ -46,7 +49,6 @@ const vectorTSServicePort = 3336;
 const spatialAnalysisServiceAddr = localAddr;
 const spatialAnalysisServicePort = 3338;
 
-const acceptAllHosts = process.argv.includes("--acceptAllHosts");
 
 
 
@@ -332,7 +334,7 @@ const proxyServer = http.createServer(function(req, res) {
 	}
 	
 	if(authToken) {
-		authClient.getUserIDFromToken(authToken, function(userID) {
+		authClient.getUserIDFromToken(authServiceAddr, authServicePort, authToken, function(userID) {
 			proxyRequest(authToken, userID, req, res);
 		})
 	}

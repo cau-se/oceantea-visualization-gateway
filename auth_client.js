@@ -14,14 +14,12 @@
 
 const http = require("http");
 
-const authServer = "127.0.0.1";
-const authPort = 3332;
 const authTimeout = 2000;
 
-function getUserIDFromToken(token, callback) {
+function getUserIDFromToken(host, port, token, callback) {
 	var req = http.request({
-			hostname: authServer,
-			port: authPort,
+			hostname: host,
+			port: port,
 			path: "/userid?token="+token,
 			method: "GET",
 			headers: {

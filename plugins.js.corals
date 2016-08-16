@@ -5,7 +5,7 @@ module.exports = {
 			guiURL: "/p_arborea_activity.html",
 			apiPrefix: "/coral_analysis",
 			serviceName: "oceantea-coral-analysis",
-			serviceAddr: "localhost",
+			serviceHost: "localhost",
 			servicePort: "3340",
 			templateParameters: {
 				libD3js : true,

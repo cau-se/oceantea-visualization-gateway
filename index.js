@@ -40,10 +40,10 @@ const localAddr = "localhost";
 const authServiceAddr = useDockerHostnames ? "oceantea-auth-inst" : localAddr;
 const authServicePort = 3332;
 
-const scalarTSServiceAddr = localAddr;
+const scalarTSServiceAddr = useDockerHostnames ? "oceantea-scalar-time-series-inst" : localAddr;
 const scalarTSServicePort = 3335;
 
-const vectorTSServiceAddr = localAddr;
+const vectorTSServiceAddr = useDockerHostnames ? "oceantea-vector-time-series-inst" : localAddr;
 const vectorTSServicePort = 3336;
 
 const spatialAnalysisServiceAddr = localAddr;
@@ -127,9 +127,13 @@ app.get("/pattern_discovery.html", function (req, res) {
 	});
 });
 
+function getPluginServiceHost(plugin) {
+	return useDockerHostnames ? (p.serviceName+"-inst") : p.serviceHost;
+}
 pluginDir.plugins.forEach(function(p) {
 	app.get(p.guiURL, function (req, res) {
-		httpClient.requestResource("GET", p.serviceAddr, p.servicePort, p.apiPrefix+"/static/index.html", 5000, -1, function(status, body) {
+		const timeout = 5000;
+		httpClient.requestResource("GET", getPluginServiceHost(p), p.servicePort, p.apiPrefix+"/static/index.html", timeout, -1, function(status, body) {
 			var params = {
 				pagetitle : p.tabName,
 				authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
@@ -299,7 +303,7 @@ function proxyRequest(authToken, userID, req, res) {
 			const p = pluginDir.plugins[i];
 			if(req.url.indexOf(p.apiPrefix) === 0) {
 				proxy.web(req, res, {
-					target: "http://"+p.serviceAddr+":"+p.servicePort+req.url,
+					target: "http://"+getPluginServiceHost(p)+":"+p.servicePort+req.url,
 					ignorePath: true
 				});
 				return;

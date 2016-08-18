@@ -128,7 +128,7 @@ app.get("/pattern_discovery.html", function (req, res) {
 });
 
 function getPluginServiceHost(plugin) {
-	return useDockerHostnames ? (p.serviceName+"-inst") : p.serviceHost;
+	return useDockerHostnames ? (plugin.serviceName+"-inst") : plugin.serviceHost;
 }
 pluginDir.plugins.forEach(function(p) {
 	app.get(p.guiURL, function (req, res) {

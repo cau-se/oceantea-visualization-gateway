@@ -223,6 +223,7 @@
 					updateDataTypesList();
 					updateTimeSeriesList();
 					updateStationSelectMenu();
+					updateBathymRegionMenu();
 				},
 				error: function(xhr, textStatus, errorThrown) {
 					if(xhr.hasOwnProperty("responseJSON")) {
@@ -236,6 +237,70 @@
 			return false;
 		});
 	});
+</script>
+
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Add Bathymetry Data</div>
+	<div class="panel-body">
+		<div class="container" style="max-width: 750px;">
+			<form method="post" action="/upload" enctype="multipart/form-data" role="form" id="formBathymetryUpload" class="form-horizontal">
+				<div class="form-group">
+					<label for="inputBathymRegion" class="control-label col-xs-3">Region</label>
+					<div class="col-xs-9">
+						<select class="form-control" id="inputBathymRegion" name="region">
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputBathymFile" class="control-label col-xs-3">Grid File</label>
+					<div class="col-xs-9">
+						<input type="file" id="inputBathymFile" name="dataFile" style="margin-top: 5px;">
+						<p class="help-block">
+							The Grid file must be a NetCDF file with dimensions x (lon) and y (lat) as well as variabes x(x), y(y), and the elelvation z(y,x).
+						</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-xs-offset-3 col-xs-9">
+						<button type="submit" class="btn btn-primary" id="buttonBathymUpload">Upload</button> <span id="uploadBathymMessage" style="margin-left: 10px;"></span>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function updateBathymRegionMenu() {
+		$("#inputBathymRegion").prop("disabled", true);
+		$("#inputBathymRegion").empty();
+		$.ajax({
+			url: "/regions",
+			type: "GET",
+			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
+			success: function(retdata) {
+				console.log(retdata);
+				var keys = Object.getOwnPropertyNames(retdata);
+				if(keys.length < 1) {
+					return;
+				}
+				keys.forEach(function(r) {
+					$("#inputBathymRegion").append('<option value="'+r+'">'+retdata[r].printName+'</option>');
+				});
+				$("#inputBathymRegion").prop("disabled", false);
+			},
+			error: function() {
+			}
+		});
+
+	}
+	$(document).ready(updateBathymRegionMenu);
 </script>
 
 
@@ -467,6 +532,7 @@
 						updateTimeSeriesList();
 						updateDataTypesList();
 						updateStationSelectMenu();
+						updateBathymRegionMenu();
 					}
 					else {
 						setTimeSeriesListResponse(tsID, false, "Error");
@@ -490,7 +556,7 @@
 			},
 			success: function(retdata) {
 				clearTimeSeriesList();
-				if(retdata.timeseries.length < 1) {
+				if(!retdata.hasOwnProperty("timeseries") || retdata.timeseries.length < 1) {
 					addInformationRowToTimeSeriesList('<b>No time series data.</b>');
 					return;
 				}
@@ -507,7 +573,5 @@
 		});
 	}
 
-	$(document).ready(function() {
-		updateTimeSeriesList();
-	});
+	$(document).ready(updateTimeSeriesList);
 </script>

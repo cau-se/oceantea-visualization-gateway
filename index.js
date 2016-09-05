@@ -46,7 +46,7 @@ const scalarTSServicePort = 3335;
 const vectorTSServiceAddr = useDockerHostnames ? "oceantea-vector-time-series-inst" : localAddr;
 const vectorTSServicePort = 3336;
 
-const spatialAnalysisServiceAddr = localAddr;
+const spatialAnalysisServiceAddr = useDockerHostnames ? "oceantea-spatial-analysis-inst" : localAddr;
 const spatialAnalysisServicePort = 3338;
 
 

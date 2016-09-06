@@ -243,71 +243,6 @@
 
 
 <div class="panel panel-default">
-	<div class="panel-heading">Add Bathymetry Data</div>
-	<div class="panel-body">
-		<div class="container" style="max-width: 750px;">
-			<form method="post" action="/upload" enctype="multipart/form-data" role="form" id="formBathymetryUpload" class="form-horizontal">
-				<div class="form-group">
-					<label for="inputBathymRegion" class="control-label col-xs-3">Region</label>
-					<div class="col-xs-9">
-						<select class="form-control" id="inputBathymRegion" name="region">
-						</select>
-					</div>
-				</div>
-				<div class="form-group">
-					<label for="inputBathymFile" class="control-label col-xs-3">Grid File</label>
-					<div class="col-xs-9">
-						<input type="file" id="inputBathymFile" name="dataFile" style="margin-top: 5px;">
-						<p class="help-block">
-							The Grid file must be a NetCDF file with dimensions x (lon) and y (lat) as well as variabes x(x), y(y), and the elelvation z(y,x).
-						</p>
-					</div>
-				</div>
-				<div class="form-group">
-					<div class="col-xs-offset-3 col-xs-9">
-						<button type="submit" class="btn btn-primary" id="buttonBathymUpload">Upload</button> <span id="uploadBathymMessage" style="margin-left: 10px;"></span>
-					</div>
-				</div>
-			</form>
-		</div>
-	</div>
-</div>
-
-<script type="text/javascript">
-	function updateBathymRegionMenu() {
-		$("#inputBathymRegion").prop("disabled", true);
-		$("#inputBathymRegion").empty();
-		$.ajax({
-			url: "/regions",
-			type: "GET",
-			cache: false,
-			headers: {
-				"x-auth-token": "{{authToken}}"
-			},
-			success: function(retdata) {
-				console.log(retdata);
-				var keys = Object.getOwnPropertyNames(retdata);
-				if(keys.length < 1) {
-					return;
-				}
-				keys.forEach(function(r) {
-					$("#inputBathymRegion").append('<option value="'+r+'">'+retdata[r].printName+'</option>');
-				});
-				$("#inputBathymRegion").prop("disabled", false);
-			},
-			error: function() {
-			}
-		});
-
-	}
-	$(document).ready(updateBathymRegionMenu);
-</script>
-
-
-
-
-
-<div class="panel panel-default">
 	<div class="panel-heading">Convert Time Series</div>
 	<div class="panel-body">
 		<button class="btn btn-primary" id="buttonConvert">Convert</button> <span id="convertTSMessage" style="margin-left: 10px;"></span>
@@ -351,6 +286,217 @@
 	});
 </script>
 
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Add Bathymetry Data</div>
+	<div class="panel-body">
+		<div class="container" style="max-width: 750px;">
+			<form method="post" action="/upload" enctype="multipart/form-data" role="form" id="formBathymetryUpload" class="form-horizontal">
+				<div class="form-group">
+					<label for="inputBathymRegion" class="control-label col-xs-3">Region</label>
+					<div class="col-xs-9">
+						<select class="form-control" id="inputBathymRegion" name="region">
+						</select>
+					</div>
+				</div>
+				<div class="form-group">
+					<label for="inputBathymFile" class="control-label col-xs-3">Grid File</label>
+					<div class="col-xs-9">
+						<input type="file" id="inputBathymFile" name="dataFile" style="margin-top: 5px;">
+						<p class="help-block">
+							The grid must be a NetCDF file with dimensions x (longitude) and y (latitude) as well as variabes x(x), y(y), and the elelvation z(y,x).
+						</p>
+					</div>
+				</div>
+				<div class="form-group">
+					<div class="col-xs-offset-3 col-xs-9">
+						<button type="submit" class="btn btn-primary" id="buttonBathymUpload">Upload</button> <span id="uploadBathymMessage" style="margin-left: 10px;"></span>
+					</div>
+				</div>
+			</form>
+		</div>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function updateBathymRegionMenu() {
+		$("#inputBathymRegion").prop("disabled", true);
+		$("#inputBathymRegion").empty();
+		$.ajax({
+			url: "/regions",
+			type: "GET",
+			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
+			success: function(retdata) {
+				var keys = Object.getOwnPropertyNames(retdata);
+				if(keys.length < 1) {
+					return;
+				}
+				keys.forEach(function(r) {
+					$("#inputBathymRegion").append('<option value="'+r+'">'+retdata[r].printName+'</option>');
+				});
+				$("#inputBathymRegion").prop("disabled", false);
+			},
+			error: function() {
+			}
+		});
+	}
+	$(document).ready(updateBathymRegionMenu);
+
+
+	function bathymUploadFormReenable(success, msg) {
+		$("#uploadBathymMessage").empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#buttonBathymUpload").empty().append('Upload');
+		if(success) {
+			$("#inputBathymFile").prop("value", "");
+		}
+		$("#formBathymetryUpload :input").prop("disabled", false);
+	}
+	$(document).ready(function() {
+		$("#formBathymetryUpload").submit(function(event) {
+			event.preventDefault();
+			$("#formBathymetryUpload :input").prop("disabled", true);
+			$("#uploadBathymMessage").empty();
+
+			if($("#inputBathymFile")[0].files.length != 1) {
+				bathymUploadFormReenable(false, "Select exactly one grid file to upload!");
+				return;
+			}
+
+			$("#buttonBathymUpload").empty().append('Uploading... <span class="fa fa-spinner fa-pulse"></span>');
+
+			var formData = new FormData();
+			var region = $("#inputBathymRegion").val();
+			formData.append("region", region);
+			formData.append($("#inputBathymFile").prop("name"), $("#inputBathymFile")[0].files[0]);
+			$.ajax({
+				url: "/bathymetries/"+region,
+				type: "POST",
+				data: formData,
+				cache: false,
+				contentType: false,
+				processData: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
+				success: function(retdata) {
+					bathymUploadFormReenable(retdata.success, retdata.message);
+					updateBathymetryTable();
+				},
+				error: function(xhr, textStatus, errorThrown) {
+					if(xhr.hasOwnProperty("responseJSON")) {
+						bathymUploadFormReenable(xhr.responseJSON.success, xhr.responseJSON.message);
+						return;
+					}
+					bathymUploadFormReenable(false, "An error occured while uploading the file!");
+				}
+			});
+
+			return false;
+		});
+	});
+</script>
+
+
+
+
+<div class="panel panel-default">
+	<div class="panel-heading">Manage Bathymetry Data</div>
+	<div class="panel-body">
+		<table class="table-striped" id="bathymetryTable" style="min-width: 450px; margin: auto;">
+			<tr id="bathymetryTableHeader" style="height: 3.5em;">
+				<th class="oceanteaTableCell" style="padding-left: 20px;">Region</th>
+				<th class="oceanteaTableCell" style="padding-right: 20px;"></th>
+			</tr>
+		</table>
+	</div>
+</div>
+
+<script type="text/javascript">
+	function clearBathymetryTable() {
+		$("#bathymetryTable tr[id!='bathymetryTableHeader']").remove();
+	}
+	function addInformationRowToBathymetryTable(msg) {
+		$("#bathymetryTable").append('<tr style="height: 3.5em;">\
+	<td colspan="2" style="text-align: center;">'+msg+'</td>\
+</tr>');
+	}
+	function setBathymetryTableResponse(id, success, msg) {
+		$("#BatTMessageID"+id).empty()
+			.append('<span class="fa fa-' +(success ? 'check' : 'times')+ '"></span> ' + msg)
+			.css("color", success ? "green" : "red");
+		$("#BatTBtnRemoveID"+id)
+			.empty()
+			.append('<span class="fa fa-trash"></span>')
+			.prop("disabled", false);
+	}
+	function addToBathymetryTable(region) {
+		var rID = region;
+		$("#bathymetryTable").append('<tr style="height: 3.5em;" id="BatTRowID'+rID+'">\
+	<td class="oceanteaTableCell" style="padding-left: 20px;">'+region+'</td>\
+	<td class="oceanteaTableCell" style="padding-right: 20px;"><button class="btn btn-danger" id="BatTBtnRemoveID'+rID+'"><span class="fa fa-trash"></span></button> <span id="BatTMessageID'+rID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
+</tr>');
+		$("#BatTBtnRemoveID"+rID).click(function() {
+			$(this)
+				.prop("disabled", true)
+				.empty()
+				.append('<span class="fa fa-spinner fa-pulse"></span>');
+			$("#BatTMessageID"+rID).empty();
+			$.ajax({
+				url: "/bathymetries/"+region,
+				type: "DELETE",
+				cache: false,
+				headers: {
+					"x-auth-token": "{{authToken}}"
+				},
+				success: function(retdata) {
+					if(retdata.success) {
+						$("#BatTRowID"+rID).remove();
+					}
+					else {
+						setBathymetryTableResponse(rID, false, "Error");
+					}
+				},
+				error: function () {
+					setBathymetryTableResponse(rID, false, "Error");
+				}
+			});
+		});
+	}
+	function updateBathymetryTable() {
+		clearBathymetryTable();
+		addInformationRowToBathymetryTable('<span class="fa fa-spinner fa-pulse"></span> <b>Retrieving bathymetry data...</b>');
+		$.ajax({
+			url: "/bathymetries",
+			type: "GET",
+			cache: false,
+			headers: {
+				"x-auth-token": "{{authToken}}"
+			},
+			success: function(retdata) {
+				clearBathymetryTable();
+				if(!retdata.hasOwnProperty("regions") || retdata.regions.length < 1) {
+					addInformationRowToTimeSeriesList('<b>No bathymetry data.</b>');
+					return;
+				}
+				retdata.regions.forEach(function(r) {
+					addToBathymetryTable(r);
+				});
+			},
+			error: function () {
+				clearBathymetryTable();
+				addInformationRowToTimeSeriesList('<b>An error occurred while retrieving the list of bathymetries.</b>');
+			}
+		});
+	}
+	$(document).ready(updateBathymetryTable);
+</script>
 
 
 
@@ -458,7 +604,7 @@
 	<div class="panel-body">
 		<table class="table-striped" id="timeSeriesTable" style="min-width: 900px; margin: auto;">
 			<tr id="timeSeriesTableHeader" style="height: 3.5em;">
-				<th class="oceanteaTableCell">Station</th>
+				<th class="oceanteaTableCell" style="padding-left: 20px;">Station</th>
 				<th class="oceanteaTableCell">Region</th>
 				<th class="oceanteaTableCell">Device</th>
 				<th class="oceanteaTableCell">Lat</th>
@@ -467,7 +613,7 @@
 				<th class="oceanteaTableCell">Series Type</th>
 				<th class="oceanteaTableCell">Data Type</th>
 				<th class="oceanteaTableCell">Reference Time</th>
-				<th class="oceanteaTableCell"></th>
+				<th class="oceanteaTableCell" style="padding-right: 20px;"></th>
 			</tr>
 		</table>
 	</div>
@@ -502,7 +648,7 @@
 		var tsID = ts.tsType+"-"+ts.station+"-"+ts.dataType+"-"+ts.depth;
 		var sameStation = (prevTS.station===ts.station);
 		$("#timeSeriesTable").append('<tr style="height: 3.5em;" id="MTSrowID'+tsID+'">\
-			<td class="oceanteaTableCell">'+(sameStation ? '' : ts.station)+'</td>\
+			<td class="oceanteaTableCell" style="padding-left: 20px;">'+(sameStation ? '' : ts.station)+'</td>\
 			<td class="oceanteaTableCell">'+(sameStation && prevTS.region===ts.region ? '' : ts.regionPrintName)+'</td>\
 			<td class="oceanteaTableCell">'+(sameStation && prevTS.device===ts.device ? '' : ts.device)+'</td>\
 			<td class="oceanteaTableCell">'+(sameStation && isAlmostEqualLatLon(prevTS.lat, ts.lat) ? '' : floatToStringLatLon(ts.lat))+'</td>\
@@ -511,7 +657,7 @@
 			<td class="oceanteaTableCell">'+ts.tsType+'</td>\
 			<td class="oceanteaTableCell">'+ts.dataType+'</td>\
 			<td class="oceanteaTableCell">'+(sameStation &&prevTS.t_reference===ts.t_reference ? '' : ts.t_reference)+'</td>\
-			<td class="oceanteaTableCell"><button class="btn btn-danger" id="MTSbtnRemoveID'+tsID+'" style="margin-top: 7px; margin-bottom: -11px;"><span class="fa fa-trash"></span></button> <span id="MTSmessageID'+tsID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
+			<td class="oceanteaTableCell" style="padding-right: 20px;"><button class="btn btn-danger" id="MTSbtnRemoveID'+tsID+'"><span class="fa fa-trash"></span></button> <span id="MTSmessageID'+tsID+'" style="margin-left: 7px; white-space:nowrap;"></span></td>\
 		</tr>');
 		$("#MTSbtnRemoveID"+tsID).click(function() {
 			$(this)

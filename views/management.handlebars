@@ -482,7 +482,7 @@
 			success: function(retdata) {
 				clearBathymetryTable();
 				if(!retdata.hasOwnProperty("regions") || retdata.regions.length < 1) {
-					addInformationRowToTimeSeriesList('<b>No bathymetry data.</b>');
+					addInformationRowToBathymetryTable('<b>No bathymetry data.</b>');
 					return;
 				}
 				retdata.regions.forEach(function(r) {

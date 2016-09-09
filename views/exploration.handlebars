@@ -157,6 +157,9 @@
 				"x-auth-token": "{{authToken}}"
 			},
 			success: function(retdata) {
+				if(!retdata || $.isEmptyObject(retdata)) {
+					return;
+				}
 				regions = retdata.regions;
 				regionsKeys = Object.getOwnPropertyNames(regions);
 				stations = retdata.stations;
@@ -991,6 +994,11 @@
 					"x-auth-token": "{{authToken}}"
 				},
 				success: function(retdata) {
+					if(!retdata || $.isEmptyObject(retdata)) {
+						ts.data[depthStr].data = null;
+						ts.data[depthStr].ajaxLoading = false;
+						return;
+					}
 					ts.data[depthStr].ajaxLoading = false;
 					var refDate = new Date(ts.t_reference);
 					if(ts.tsType == "scalar") {

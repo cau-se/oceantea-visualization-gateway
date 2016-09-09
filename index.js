@@ -27,8 +27,8 @@ const exphbs  = require("express-handlebars");
 const validator  = require("validator");
 const authClient = require("./auth_client");
 const httpClient = require("./http_client");
-const gMapsKey = require("./gmaps_key");
-const pluginDir = require("./plugins");
+const gMapsKey = require("./config/gmaps_key");
+const pluginDir = require("./config/plugins");
 
 const acceptAllHosts = process.argv.includes("--acceptAllHosts");
 const useDockerHostnames = process.argv.includes("--useDockerHostnames");

@@ -116,7 +116,9 @@ app.get("/spatial_analysis.html", function (req, res) {
 	res.render("spatial_analysis", {
 		pagetitle : "Spatial Analysis",
 		authToken : (req.query.hasOwnProperty("authToken") ? validator.whitelist(req.query.authToken, "0-9a-fA-F") : null),
-		navSpatialAnalysis : true
+		navSpatialAnalysis : true,
+		libBootstrapSlider : true,
+		libFontAwesome : true
 	});
 });
 app.get("/pattern_discovery.html", function (req, res) {

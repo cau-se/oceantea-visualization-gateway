@@ -1,2 +1,53 @@
 
-<p>Not publicly available yet</p>
+<script type="text/javascript" src="lib/threejs/three.min.js"></script>
+<script type="text/javascript" src="lib/threejs/Lut.js"></script>
+<script type="text/javascript" src="lib/threejs/OrbitControls.js"></script>
+
+<script type="text/javascript" src="js/spatial_analysis/oceanFLoor.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/lut.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/grid.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/main.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/tests.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/station.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/slider.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/arrowWithMarks.js"></script>
+<script type="text/javascript" src="js/spatial_analysis/checkboxFunctions.js"></script>
+
+<div class="row" id="webGLRow">
+
+<div id="WebGL-output" class="col-lg-12" style="position: relative;">
+	<div id="gui-placement" style="position:absolute; background: transparent; top:0; left:10rem; right:50rem;">
+	
+	</div>
+	<div id="arrow-container" style="position:absolute; left:8rem; top:8rem;">
+	</div>
+	
+	<div id="lut-placement" style="position:absolute; background-color: #000; background: transparent; right:15rem;"> 
+		
+		<Button id="infoButton" class="btn btn-primary oceanteaSelectionBtn">Help</Button>
+		<Button id="resetButton" class="btn btn-primary oceanteaSelectionBtn">Reset</Button>
+		<div>
+			<input type="checkbox" id="oceanFloorVisibleCheckbox" value="oceanFloorVisible" onchange="oceanFloorVisibleCheck()" checked> Ocean Floor Visible<br>
+			<input type="checkbox" id="stationsVisibleCheckbox" value="stationsVisible" onchange="stationsVisibleCheck()" checked> Stations Visible <br>
+			<input type="checkbox" id="colorGradientOnArrowsCheckbox" value="colorOn" onchange="colorGradientOnArrowsCheck()" checked> Color Gradient On Arrows Visible<br>
+			<input type="checkbox" id="arrowsVisibleCheckbox" value="arrowsOn" onchange="arrowsVisibleCheck()" checked> Arrows Visible <br>
+		</div>
+		
+		<div id="lut-container">
+		</div>
+		
+	</div>
+</div>
+
+<div id="time-slider-placement" style="position:absolute; bottom:8rem; background: transparent; left:8rem; right:8rem;">
+	<!-- #timeSliderSlider {width:100%} -->
+	<input id="timeSlider" data-slider-id='timeSliderSlider' type="text" data-slider-min="0" data-slider-max="0" data-slider-step="1" data-slider-value="0"/>	
+</div> 
+	
+<Button id="playButton" class="btn btn-primary oceanteaSelectionBtn" style="position:absolute; bottom:0; left:8rem;">Play</Button>
+
+<div id="speed-slider-placement" style="position:absolute; bottom:1rem; background: transparent; width:100%; left:16rem;">
+	<input id="speedSlider" data-slider-id='speedSliderSlider' type="text" data-slider-min="1" data-slider-max="30" data-slider-step="1" data-slider-value="1"/> 
+</div> 
+
+</div>

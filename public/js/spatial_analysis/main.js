@@ -45,7 +45,7 @@ var lineGroup;
 var stationsGroup;
 var labelingGroup;
 
-var camera, scene, renderer;
+var camera=null, scene, renderer;
  
  
 var SCALE_VALUE = 10000;
@@ -116,7 +116,15 @@ function init() {
 	renderer.setSize( rendererSize[0], rendererSize[1] );	
 	renderer.setClearColor( 0x6C7A8D );
 	renderer.setPixelRatio( window.devicePixelRatio );
-	document.body.appendChild( renderer.domElement );
+	$("#WebGL-output").append(renderer.domElement);
+ 	$(window).resize(function() {
+ 		var rendererSize = getCanvasSize();
+ 		if(camera) {
+ 			camera.aspect = rendererSize[0] / rendererSize[1];
+ 			camera.updateProjectionMatrix();
+		}
+ 		renderer.setSize( rendererSize[0], rendererSize[1] );
+ 	});
 	
 	loadSlider();
 	 
@@ -124,7 +132,7 @@ function init() {
 	$.when(
 		 
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp",
+			url: "/timeseries/adcp",
 			success: function(data) {
 			
 				stations = data.timeseries;
@@ -132,7 +140,7 @@ function init() {
 			}
 		}),
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries",
+			url: "/bathymetries",
 			success: function(data) {
 			
 				regions = data.regions;
@@ -143,14 +151,14 @@ function init() {
 				
 				else {
 					
-					alert("No regions!!");
+					//alert("No regions!!");
 					
 				}
 				 
 			}
 		}),		
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/regions",
+			url: "/regions",
 			success: function(data) {
 			
 				regionNames = data;
@@ -170,7 +178,7 @@ function loadFirstRegion( ) {
 	
 	$.when(
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+region,
+			url: "/bathymetries/"+region,
 			success: function(data) {
 
 				smallesty = data.lat_min;
@@ -188,7 +196,7 @@ function loadFirstRegion( ) {
 		 
 		
 	).then( function(){
-		alert("data loaded");
+		//alert("data loaded");
 		
 		testMainValues(region);
 	  
@@ -369,7 +377,7 @@ function createRegionButtons() {
 			
 			$.when(
 				$.ajax({
-					url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+button.id,
+					url: "/bathymetries/"+button.id,
 					success: function(data) {
 
 						smallesty = data.lat_min;
@@ -388,7 +396,7 @@ function createRegionButtons() {
 					}
 				}) 
 			).then( function(){
-				alert( "data loaded" );
+				//alert( "data loaded" );
 				testMainValues(button.id); 
 				show();
 			});
@@ -424,7 +432,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 
 	if (station.nUpBins > 0) {
 		upLoad = $.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
+			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
 			async: true,
 			success:function(data){
 			
@@ -438,7 +446,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 	}
 	if (station.nDownBins > 0) {
 		downLoad = $.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
+			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
 			async: true,
 			success: function(data) {
 			
@@ -698,7 +706,7 @@ function writeNamesOnStations(num){
 	var fontLoader = new THREE.FontLoader();
 	var fontSize = BOX_SIZE/stationsOfCurrentRegionList[num].device.length;
 
-	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
+	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
 		
 		var textGeo = new THREE.TextGeometry( stationsOfCurrentRegionList[num].device, {
 

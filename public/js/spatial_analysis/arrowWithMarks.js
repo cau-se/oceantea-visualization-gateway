@@ -15,32 +15,28 @@
 THREE.MarkedArrowHelper = ( function () {
 
 
-	return function MarkedArrowHelper( dir, origin, length, color, headLength, headWidth, marksNeeded ) {
+	return function MarkedArrowHelper( dir, origin, length, markColor, headLength, headWidth, ownColorOfMarksNeeded ) {
 		
-		this.color = color;
-		this.distance = DISTANCES_OF_MARKS_ON_ARROWS; // in mm/s 
+		this.markColor = markColor;
+		this.distance = 50;  
 		this.markGroup = new THREE.Group();
-		
 	
 		THREE.ArrowHelper.call( this, dir, origin, length, 0x000000, headLength, headWidth );
+		
 		this.add(this.markGroup);
-		var material = new THREE.MeshBasicMaterial( { color: this.color } ); 
-		var geometry = new THREE.SphereGeometry( 4, 4, 4 );  
+		
+		var markMaterial = new THREE.MeshBasicMaterial( { color: this.markColor } ); 
+		var markGeometry = new THREE.SphereGeometry( 4, 4, 4 );  
 
 		for (var i = this.distance; i <= length; i=i+this.distance) {
 		
-			var sphere = new THREE.Mesh( geometry, material ); 
+			var sphere = new THREE.Mesh( markGeometry, markMaterial ); 
 			sphere.position.set( 0, i, 0 );
 			this.markGroup.add( sphere );
 		}
 		
 		this.addMarks();
-		
-		if (!marksNeeded) {
-			
-			this.addOrRemoveColorscaleMarks();
-		}
-		
+		this.addOrRemoveColorscaleMarks(ownColorOfMarksNeeded);
 
 	};
 
@@ -53,7 +49,7 @@ THREE.MarkedArrowHelper.prototype.removeMarks = function () {
 	
 	for (var i = 0; i < this.markGroup.length; i++) {
 		
-		this.remove(markGroup.getChildren[i]);	 
+		this.remove(this.markGroup.getChildren[i]);	 
 	} 
 	
 }
@@ -62,7 +58,7 @@ THREE.MarkedArrowHelper.prototype.addMarks = function () {
 	
 	for (var i = 0; i < this.markGroup.length; i++) {
 		
-		this.add(markGroup.getChildren[i]);	 
+		this.add(this.markGroup.getChildren[i]);	 
 	}
 	
 }
@@ -88,17 +84,17 @@ THREE.MarkedArrowHelper.prototype.writeOn = function (textGeo, pos) {
 
  
 
-THREE.MarkedArrowHelper.prototype.addOrRemoveColorscaleMarks = function ( checked ) {
+THREE.MarkedArrowHelper.prototype.addOrRemoveColorscaleMarks = function ( ownColorOfMarksNeeded ) {
 	
 	this.removeMarks();	
 	
 	for (var i = 0; i < this.markGroup.children.length; i++) {
 		
 		
-		if ( checked ) {
+		if ( ownColorOfMarksNeeded ) {
 			
 			
-			this.markGroup.children[i].material = new THREE.MeshBasicMaterial({color:this.color});
+			this.markGroup.children[i].material = new THREE.MeshBasicMaterial({color:this.markColor});
 			
 		}
 		

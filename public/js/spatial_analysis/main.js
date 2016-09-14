@@ -202,6 +202,7 @@ function loadFirstRegion( ) {
 	  
 		createGui();
 		show();
+		render();
 	});
 	
 	

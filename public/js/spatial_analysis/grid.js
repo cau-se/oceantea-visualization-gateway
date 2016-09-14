@@ -254,7 +254,7 @@ function makeText( content, xPos, yPos, zPos, size, movement ) {
 	
   
 	var loader = new THREE.FontLoader();
-	loader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
+	loader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
 
 		var textGeo = new THREE.TextGeometry( content, {
 

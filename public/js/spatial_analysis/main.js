@@ -49,7 +49,7 @@ var lineGroup;
 var stationsGroup;
 var labelingGroup;
 
-var camera, scene, renderer;
+var camera=null, scene, renderer;
  
  
 var SCALE_VALUE = 10000;
@@ -92,6 +92,13 @@ var numberOfStationDirections;
 //How to disable web security in chrome 
 // .\chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security 
  
+function getCanvasSize() {
+	var paddingMaincontainerTopBottom = 6;
+	var paddingMaincontainerLeftRight = 15;
+	return [window.innerWidth-2*paddingMaincontainerLeftRight, 
+		window.innerHeight - 2*paddingMaincontainerTopBottom - $("#rowNavBar").height()];
+}
+
 function init() { 
 
 	//testFloatSaveRemainder();
@@ -109,12 +116,21 @@ function init() {
 	
 	//set the renderer 
 	renderer = new THREE.WebGLRenderer();		
-	renderer.setSize( window.innerWidth, window.innerHeight );
+	var rendererSize = getCanvasSize();	
+	renderer.setSize( rendererSize[0], rendererSize[1] );
 	renderer.setClearColor( 0x6C7A8D );
 	renderer.setPixelRatio( window.devicePixelRatio );
-	document.body.appendChild( renderer.domElement );
+	$("#WebGL-output").append(renderer.domElement);
+	$(window).resize(function() {
+		var rendererSize = getCanvasSize();
+		if(camera) {
+			camera.aspect = rendererSize[0] / rendererSize[1];
+			camera.updateProjectionMatrix();
+		}
+		renderer.setSize( rendererSize[0], rendererSize[1] );
+	});
 	
-	loadSlider()
+	loadSlider();
 	
 	
 	  
@@ -122,7 +138,7 @@ function init() {
 	$.when(
 		 
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp",
+			url: "/timeseries/adcp",
 			success: function(data) {
 			
 				stations = data.timeseries;
@@ -130,7 +146,7 @@ function init() {
 			}
 		}),
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries",
+			url: "/bathymetries",
 			success: function(data) {
 			
 				regions = data.regions;
@@ -141,14 +157,14 @@ function init() {
 				
 				else {
 					
-					alert("No regions!!");
+					//alert("No regions!!");
 					
 				}
 				 
 			}
 		}),		
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/regions",
+			url: "/regions",
 			success: function(data) {
 			
 				regionNames = data;
@@ -168,7 +184,7 @@ function loadFirstRegion( ) {
 	
 	$.when(
 		$.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+region,
+			url: "/bathymetries/"+region,
 			success: function(data) {
 
 				smallesty = data.lat_min;
@@ -186,12 +202,13 @@ function loadFirstRegion( ) {
 		 
 		
 	).then( function(){
-		alert("data loaded");
+		//alert("data loaded");
 		
 		testMainValues(region);
 	  
 		createGui();
 		show();
+		render();
 	});
 	
 	
@@ -363,11 +380,11 @@ function createRegionButtons() {
 				inputs[i].disabled = true;
 			}
 
-			alert("loading data, please wait!");
+			//alert("loading data, please wait!");
 			
 			$.when(
 				$.ajax({
-					url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+button.id,
+					url: "/bathymetries/"+button.id,
 					success: function(data) {
 
 						smallesty = data.lat_min;
@@ -386,7 +403,7 @@ function createRegionButtons() {
 					}
 				}) 
 			).then( function(){
-				alert( "data loaded" );
+				//alert( "data loaded" );
 				testMainValues(button.id); 
 				show();
 			});
@@ -422,7 +439,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 
 	if (station.nUpBins > 0) {
 		upLoad = $.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
+			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
 			async: true,
 			success:function(data){
 			
@@ -436,7 +453,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 	}
 	if (station.nDownBins > 0) {
 		downLoad = $.ajax({
-			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
+			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
 			async: true,
 			success: function(data) {
 			
@@ -576,7 +593,7 @@ function show() {
 	var originalSpeedVal;
 	
 	  
-	render();
+	//render(); -> Double rendering BUG!
 	  
 	
 	document.getElementById( 'colorGradientOnArrowsCheckbox' ).disabled = false;
@@ -654,7 +671,7 @@ function placeNewStations(){
 function writeOnArrow(num) {
 	
 	var fontLoader = new THREE.FontLoader();
-	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
+	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
 			
 		var textGeo = new THREE.TextGeometry( num, {
 
@@ -700,7 +717,7 @@ function writeNamesOnStations(num){
 	var fontLoader = new THREE.FontLoader();
 	var fontSize = BOX_SIZE/stationsOfCurrentRegionList[num].device.length;
 
-	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
+	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
 		
 		var textGeo = new THREE.TextGeometry( stationsOfCurrentRegionList[num].device, {
 

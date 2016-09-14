@@ -15,10 +15,7 @@
 
 //vars for the important data of the loaded region 
 var smallestx, smallesty, biggestx, biggesty, minheight, maxheight;
-var heighestXCoordinate;
-var smallestXCoordinate, smallestYCoordinate;
-var differenceBetweenMinAndMaxX, differenceBetweenMinAndMaxY;
-
+var zerox, zeroy; 
 //vertices and faces for the ocean floor
 var vertices = [];
 var faces = [];
@@ -41,7 +38,6 @@ var lon = [];
 //var raycaster;
 
 //grid
-var zerox, zeroy;
 var plane;
   
 //groups
@@ -49,12 +45,11 @@ var lineGroup;
 var stationsGroup;
 var labelingGroup;
 
-var camera=null, scene, renderer;
+var camera, scene, renderer;
  
  
 var SCALE_VALUE = 10000;
 var LENGTH_OF_LUT_ARROW = 545;
-var DISTANCES_OF_MARKS_ON_ARROWS = 50;
 var BOX_SIZE = 30;
 var BIN_SIZE = BOX_SIZE/100;
   
@@ -92,13 +87,6 @@ var numberOfStationDirections;
 //How to disable web security in chrome 
 // .\chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security 
  
-function getCanvasSize() {
-	var paddingMaincontainerTopBottom = 6;
-	var paddingMaincontainerLeftRight = 15;
-	return [window.innerWidth-2*paddingMaincontainerLeftRight, 
-		window.innerHeight - 2*paddingMaincontainerTopBottom - $("#rowNavBar").height()];
-}
-
 function init() { 
 
 	//testFloatSaveRemainder();
@@ -116,21 +104,12 @@ function init() {
 	
 	//set the renderer 
 	renderer = new THREE.WebGLRenderer();		
-	var rendererSize = getCanvasSize();	
-	renderer.setSize( rendererSize[0], rendererSize[1] );
+	renderer.setSize( window.innerWidth, window.innerHeight );
 	renderer.setClearColor( 0x6C7A8D );
 	renderer.setPixelRatio( window.devicePixelRatio );
-	$("#WebGL-output").append(renderer.domElement);
-	$(window).resize(function() {
-		var rendererSize = getCanvasSize();
-		if(camera) {
-			camera.aspect = rendererSize[0] / rendererSize[1];
-			camera.updateProjectionMatrix();
-		}
-		renderer.setSize( rendererSize[0], rendererSize[1] );
-	});
+	document.body.appendChild( renderer.domElement );
 	
-	loadSlider();
+	loadSlider()
 	
 	
 	  
@@ -138,7 +117,7 @@ function init() {
 	$.when(
 		 
 		$.ajax({
-			url: "/timeseries/adcp",
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp",
 			success: function(data) {
 			
 				stations = data.timeseries;
@@ -146,7 +125,7 @@ function init() {
 			}
 		}),
 		$.ajax({
-			url: "/bathymetries",
+			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries",
 			success: function(data) {
 			
 				regions = data.regions;
@@ -157,14 +136,14 @@ function init() {
 				
 				else {
 					
-					//alert("No regions!!");
+					alert("No regions!!");
 					
 				}
 				 
 			}
 		}),		
 		$.ajax({
-			url: "/regions",
+			url: "http://samoa.informatik.uni-kiel.de:3333/regions",
 			success: function(data) {
 			
 				regionNames = data;
@@ -184,7 +163,7 @@ function loadFirstRegion( ) {
 	
 	$.when(
 		$.ajax({
-			url: "/bathymetries/"+region,
+			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+region,
 			success: function(data) {
 
 				smallesty = data.lat_min;
@@ -202,13 +181,12 @@ function loadFirstRegion( ) {
 		 
 		
 	).then( function(){
-		//alert("data loaded");
+		alert("data loaded");
 		
 		testMainValues(region);
 	  
 		createGui();
 		show();
-		render();
 	});
 	
 	
@@ -293,7 +271,7 @@ function createLookupHelpers() {
 	var origin = new THREE.Vector3( -300, 350, -350 ); //0 is in the middle
 	
 	lutArrow = new THREE.MarkedArrowHelper( dir, origin, LENGTH_OF_LUT_ARROW, 0xff0000, 25, 25, true);
-	writeOnArrow(DISTANCES_OF_MARKS_ON_ARROWS);
+	writeOnArrow(lutArrow.distance, lutArrow.distance);
 	arrowScene.add(lutArrow);	
 	
 	var arrowRender = function () {
@@ -380,11 +358,11 @@ function createRegionButtons() {
 				inputs[i].disabled = true;
 			}
 
-			//alert("loading data, please wait!");
+			alert("loading data, please wait!");
 			
 			$.when(
 				$.ajax({
-					url: "/bathymetries/"+button.id,
+					url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+button.id,
 					success: function(data) {
 
 						smallesty = data.lat_min;
@@ -403,7 +381,7 @@ function createRegionButtons() {
 					}
 				}) 
 			).then( function(){
-				//alert( "data loaded" );
+				alert( "data loaded" );
 				testMainValues(button.id); 
 				show();
 			});
@@ -439,7 +417,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 
 	if (station.nUpBins > 0) {
 		upLoad = $.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
 			async: true,
 			success:function(data){
 			
@@ -453,7 +431,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 	}
 	if (station.nDownBins > 0) {
 		downLoad = $.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
 			async: true,
 			success: function(data) {
 			
@@ -500,6 +478,13 @@ function moveArrows(station, uniTime, arrowCounter) {
 	 
 function show() {
 	
+	var differenceBetweenMinAndMaxX = biggestx - smallestx;
+	var differenceBetweenMinAndMaxY = biggesty - smallesty;
+	var biggestxToNextThousand, biggestyToNextThousand;
+	var firstStationIndex = 0;
+	var bb = new THREE.Box3();
+	var inputs = document.getElementsByTagName('BUTTON');
+	
 	AutoplayNS.resetNumberOfMovedArrowDirections();
 	numberOfStationDirections = 0;
 
@@ -509,8 +494,6 @@ function show() {
 	 
 	lineGroup = new THREE.Group();
 	  
-	var firstStationIndex = 0;
-	 
 	getMinAndMaxForSliderAndTimestamps(stations[firstStationIndex], firstStationIndex, [], []);
 	
 	//empty the stationsOfCurrentRegionList  
@@ -524,12 +507,9 @@ function show() {
 	zerox = Math.floor( smallestx );
 	zeroy = Math.floor( smallesty );
 	
-	differenceBetweenMinAndMaxX = biggestx - smallestx;
-	differenceBetweenMinAndMaxY = biggesty - smallesty
-
 	//for the size of the camera
-	var biggestxToNextThousand =  Math.ceil( ( differenceBetweenMinAndMaxX ) * SCALE_VALUE/1000 )*1000;  
-	var biggestyToNextThousand =  Math.ceil( ( differenceBetweenMinAndMaxY ) * SCALE_VALUE/1000 )*1000;
+	biggestxToNextThousand =  Math.ceil( ( differenceBetweenMinAndMaxX ) * SCALE_VALUE/1000 )*1000;  
+	biggestyToNextThousand =  Math.ceil( ( differenceBetweenMinAndMaxY ) * SCALE_VALUE/1000 )*1000;
 	
 	//camerasize needs to depend on the size of the coordinate system 
 	if ( biggestxToNextThousand < 3000 && biggestyToNextThousand < 3000 ) {
@@ -561,15 +541,15 @@ function show() {
 	// and (smallesty - zeroy) on the y-axis
 	
 	//the size of the squares needs to depend from the size of the ocean-floor
-	calculateGridDistancesAndAddGrid();
+	calculateGridDistancesAndAddGrid( differenceBetweenMinAndMaxX, differenceBetweenMinAndMaxY );
  	
 	placeNewStations();
     
-	createOceanFloorMesh ();
+	createOceanFloorMesh();
   
 	//to calculate the position of the camera
 	//the ocean-floor has to be in the middle of the scene 
-	var bb = new THREE.Box3()
+	
 	bb.setFromObject( oceanFloorMesh );
 	bb.center( camera.position );
 	
@@ -586,29 +566,21 @@ function show() {
 	//For testing 
 	//window.addEventListener( "keydown", showOceanFloorPosition, true);
 	//window.addEventListener( "mousedown", testOceanFloorPosition, true);
-	
-	 
-	//slider eventlistener
-	var originalTimeVal;
-	var originalSpeedVal;
-	
+	   
+	render();
 	  
-	//render(); -> Double rendering BUG!
-	  
-	
 	document.getElementById( 'colorGradientOnArrowsCheckbox' ).disabled = false;
 	document.getElementById( 'arrowsVisibleCheckbox').disabled = false;
 	
 	//enable the GUI-elements after loading 
-	var inputs = document.getElementsByTagName('BUTTON');
 	for (var i = 0; i < inputs.length; i++) {
 		inputs[i].disabled = false;
 	}
 	
 	//disable only the button that belongs to the showed region (no second load of a loaded region!)
 	
-	var regionButton = document.getElementById( region );
-	regionButton.disabled = true;
+	//var regionButton = document.getElementById( region );
+	//regionButton.disabled = true; //TODO
 	 
 }
 
@@ -668,10 +640,11 @@ function placeNewStations(){
 
 
 
-function writeOnArrow(num) {
+function writeOnArrow(distance, num) {
 	
 	var fontLoader = new THREE.FontLoader();
-	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
+	
+	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
 			
 		var textGeo = new THREE.TextGeometry( num, {
 
@@ -683,11 +656,11 @@ function writeOnArrow(num) {
 		
 		lutArrow.writeOn(textGeo, num);
 		
-		num = num + DISTANCES_OF_MARKS_ON_ARROWS; 
+		num = num + distance; 
 		
 		if ( num <= LENGTH_OF_LUT_ARROW   ) {   
 			
-			writeOnArrow(num);
+			writeOnArrow( distance, num );
 			
 		}
 		
@@ -717,7 +690,7 @@ function writeNamesOnStations(num){
 	var fontLoader = new THREE.FontLoader();
 	var fontSize = BOX_SIZE/stationsOfCurrentRegionList[num].device.length;
 
-	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
+	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
 		
 		var textGeo = new THREE.TextGeometry( stationsOfCurrentRegionList[num].device, {
 

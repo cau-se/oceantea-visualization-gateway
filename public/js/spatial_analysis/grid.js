@@ -13,11 +13,12 @@
 // limitations under the License.
 
 
-function calculateGridDistancesAndAddGrid() {
+function calculateGridDistancesAndAddGrid( differenceBetweenMinAndMaxX, differenceBetweenMinAndMaxY ) {
 	
 	var smallestDifferenceBetweenMinAndMax;
 	var calculatedGridDistance;
-	var zerosDirectlyAfterDot
+	var zerosDirectlyAfterDot;
+	var predecimal, decimal;
 	
 	if ( differenceBetweenMinAndMaxX <= differenceBetweenMinAndMaxY ) {
 		smallestDifferenceBetweenMinAndMax = differenceBetweenMinAndMaxX;
@@ -29,8 +30,8 @@ function calculateGridDistancesAndAddGrid() {
 	console.log ("Smallest difference for grid: "+smallestDifferenceBetweenMinAndMax);
 	
 	//Math.floor always rounds downward to nearest integer
-	var predecimal = Math.floor(smallestDifferenceBetweenMinAndMax);
-	var decimal = smallestDifferenceBetweenMinAndMax - predecimal;
+	predecimal = Math.floor(smallestDifferenceBetweenMinAndMax);
+	decimal = smallestDifferenceBetweenMinAndMax - predecimal;
 	
 	//console.log(predecimal+" "+decimal);
 	//TEST: predecimal = 3344;
@@ -57,16 +58,17 @@ function calculateGridDistancesAndAddGrid() {
 		
 		zerosDirectlyAfterDot = zeroCounter;
 		console.log("zerosDirectlyAfterDot: "+ zerosDirectlyAfterDot);
-		var GridDistanceString = "0.";
+		
+		var gridDistanceString = "0.";
 		
 		for (var i = 0; i < zerosDirectlyAfterDot; i++) {
 			
-			GridDistanceString = GridDistanceString + "0";
+			gridDistanceString = gridDistanceString + "0";
 			
 		}
 		
-		GridDistanceString = GridDistanceString + "1";
-		calculatedGridDistance = parseFloat(GridDistanceString);
+		gridDistanceString = gridDistanceString + "1";
+		calculatedGridDistance = parseFloat(gridDistanceString);
 		
 		console.log ("calculatedGridDistance: "+calculatedGridDistance);
 	}
@@ -254,7 +256,7 @@ function makeText( content, xPos, yPos, zPos, size, movement ) {
 	
   
 	var loader = new THREE.FontLoader();
-	loader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
+	loader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
 
 		var textGeo = new THREE.TextGeometry( content, {
 

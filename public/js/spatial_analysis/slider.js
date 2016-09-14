@@ -6,7 +6,7 @@ function getMinAndMaxForSliderAndTimestamps(station, stationCounter, sliderMins,
 	$.when(
 	
 		$.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/"+station.adcpDirection+"/timestamps",
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/"+station.adcpDirection+"/timestamps",
 			async: true,
 			success:function(data){
 				stationCounter++;
@@ -149,6 +149,8 @@ function loadSlider() {
 }
 function whatTheChangeTimeSliderDoes() {
 	
+	var originalTimeVal;
+	
 	changeTimeSlider.slider().on('slideStart', function(ev){
 		originalTimeVal = changeTimeSlider.data('slider').getValue();
 	});
@@ -170,6 +172,8 @@ function whatTheChangeTimeSliderDoes() {
 }
 
 function whatTheChangeSpeedSliderDoes() {
+	
+	var originalSpeedVal;
 	
 	changeSpeedSlider.slider().on('slideStart', function(ev){
 		originalSpeedVal = changeSpeedSlider.data('slider').getValue();

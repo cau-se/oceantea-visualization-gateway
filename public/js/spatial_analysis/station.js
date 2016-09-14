@@ -239,7 +239,7 @@ MeasuringStation.prototype.addUpBins = function (nUpBins, firstUpBinHeight, binU
 	 
 }
 
-MeasuringStation.prototype.moveUpArrows = function( lengthsUp, dirsUp, marksNeeded ) {
+MeasuringStation.prototype.moveUpArrows = function( lengthsUp, dirsUp, ownColorOfMarksNeeded ) {
 	
 	 
 	for (var i = 0; i < this.arrowUpList.length; i++) {
@@ -260,7 +260,7 @@ MeasuringStation.prototype.moveUpArrows = function( lengthsUp, dirsUp, marksNeed
 			var arrowDirectionY = Math.sin(0.5 * Math.PI -dirsUp[i]);
 			var dir = new THREE.Vector3( arrowDirectionX, arrowDirectionY ,0)
 			var origin = new THREE.Vector3( 0, 0, this.adcpFirstBinUpHeight + i * this.adcpBinUpHeight  );
-			this.arrowUpList[i] = ( new THREE.MarkedArrowHelper( dir, origin, lengthsUp[i], this.stationsLut.getColor(i), 1, 1, marksNeeded ) );
+			this.arrowUpList[i] = ( new THREE.MarkedArrowHelper( dir, origin, lengthsUp[i], this.stationsLut.getColor(i), 1, 1, ownColorOfMarksNeeded ) );
 			
 		}
 		
@@ -288,7 +288,7 @@ MeasuringStation.prototype.moveUpArrows = function( lengthsUp, dirsUp, marksNeed
 };
    
 
-MeasuringStation.prototype.moveDownArrows = function ( lengthsDown, dirsDown, marksNeeded ) { 
+MeasuringStation.prototype.moveDownArrows = function ( lengthsDown, dirsDown, ownColorOfMarksNeeded ) { 
 
 	for (var i = 0; i < this.arrowDownList.length; i++) {
 		//deletes arrows from visualisation
@@ -308,7 +308,7 @@ MeasuringStation.prototype.moveDownArrows = function ( lengthsDown, dirsDown, ma
 			var dir = new THREE.Vector3( arrowDirectionX, arrowDirectionY ,0)
 		
 			var origin = new THREE.Vector3( 0, 0, (this.adcpFirstBinDownHeight + i * this.adcpBinDownHeight) *-1 );
-			this.arrowDownList[i] = ( new THREE.MarkedArrowHelper( dir, origin, lengthsDown[i], this.stationsLut.getColor(i), 1, 1, marksNeeded ) );
+			this.arrowDownList[i] = ( new THREE.MarkedArrowHelper( dir, origin, lengthsDown[i], this.stationsLut.getColor(i), 1, 1, ownColorOfMarksNeeded ) );
 		}
 		else {
 			//alert(this.arrowDownList[i]+i+" down!");

@@ -45,7 +45,7 @@ var lineGroup;
 var stationsGroup;
 var labelingGroup;
 
-var camera=null, scene, renderer;
+var camera, scene, renderer;
  
  
 var SCALE_VALUE = 10000;
@@ -93,6 +93,7 @@ function getCanvasSize() {
  	return [window.innerWidth-2*paddingMaincontainerLeftRight, 
  		window.innerHeight - 2*paddingMaincontainerTopBottom - $("#rowNavBar").height()];
 }
+
  
 function init() { 
 
@@ -115,25 +116,15 @@ function init() {
 	renderer.setSize( rendererSize[0], rendererSize[1] );	
 	renderer.setClearColor( 0x6C7A8D );
 	renderer.setPixelRatio( window.devicePixelRatio );
-	$("#WebGL-output").append(renderer.domElement);
-	$(window).resize(function() {
-		var rendererSize = getCanvasSize();
-		if(camera) {
-			camera.aspect = rendererSize[0] / rendererSize[1];
-			camera.updateProjectionMatrix();
-		}
-		renderer.setSize( rendererSize[0], rendererSize[1] );
-	});
+	document.body.appendChild( renderer.domElement );
 	
 	loadSlider();
-	
-	
-	  
+	 
 	//load data which is relevant for all regions 
 	$.when(
 		 
 		$.ajax({
-			url: "/timeseries/adcp",
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp",
 			success: function(data) {
 			
 				stations = data.timeseries;
@@ -141,7 +132,7 @@ function init() {
 			}
 		}),
 		$.ajax({
-			url: "/bathymetries",
+			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries",
 			success: function(data) {
 			
 				regions = data.regions;
@@ -152,14 +143,14 @@ function init() {
 				
 				else {
 					
-					//alert("No regions!!");
+					alert("No regions!!");
 					
 				}
 				 
 			}
 		}),		
 		$.ajax({
-			url: "/regions",
+			url: "http://samoa.informatik.uni-kiel.de:3333/regions",
 			success: function(data) {
 			
 				regionNames = data;
@@ -179,7 +170,7 @@ function loadFirstRegion( ) {
 	
 	$.when(
 		$.ajax({
-			url: "/bathymetries/"+region,
+			url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+region,
 			success: function(data) {
 
 				smallesty = data.lat_min;
@@ -197,13 +188,12 @@ function loadFirstRegion( ) {
 		 
 		
 	).then( function(){
-		//alert("data loaded");
+		alert("data loaded");
 		
 		testMainValues(region);
 	  
 		createGui();
 		show();
-		render();
 	});
 	
 	
@@ -375,11 +365,11 @@ function createRegionButtons() {
 				inputs[i].disabled = true;
 			}
 
-			//alert("loading data, please wait!");
+			alert("loading data, please wait!");
 			
 			$.when(
 				$.ajax({
-					url: "/bathymetries/"+button.id,
+					url: "http://samoa.informatik.uni-kiel.de:3333/bathymetries/"+button.id,
 					success: function(data) {
 
 						smallesty = data.lat_min;
@@ -398,7 +388,7 @@ function createRegionButtons() {
 					}
 				}) 
 			).then( function(){
-				//alert( "data loaded" );
+				alert( "data loaded" );
 				testMainValues(button.id); 
 				show();
 			});
@@ -434,7 +424,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 
 	if (station.nUpBins > 0) {
 		upLoad = $.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/up/"+stationTime,
 			async: true,
 			success:function(data){
 			
@@ -448,7 +438,7 @@ function moveArrows(station, uniTime, arrowCounter) {
 	}
 	if (station.nDownBins > 0) {
 		downLoad = $.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/down/"+stationTime,
 			async: true,
 			success: function(data) {
 			
@@ -598,6 +588,7 @@ function show() {
 	
 	var regionButton = document.getElementById( region );
 	regionButton.disabled = true;  
+
 	 
 }
 
@@ -707,7 +698,7 @@ function writeNamesOnStations(num){
 	var fontLoader = new THREE.FontLoader();
 	var fontSize = BOX_SIZE/stationsOfCurrentRegionList[num].device.length;
 
-	fontLoader.load( 'lib/threejs/helvetiker/helvetiker_bold.typeface.json', function ( font ) {
+	fontLoader.load( 'libs/helvetiker_bold.typeface.json', function ( font ) {
 		
 		var textGeo = new THREE.TextGeometry( stationsOfCurrentRegionList[num].device, {
 

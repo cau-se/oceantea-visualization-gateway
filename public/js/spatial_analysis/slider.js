@@ -6,7 +6,7 @@ function getMinAndMaxForSliderAndTimestamps(station, stationCounter, sliderMins,
 	$.when(
 	
 		$.ajax({
-			url: "/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/"+station.adcpDirection+"/timestamps",
+			url: "http://samoa.informatik.uni-kiel.de:3333/timeseries/adcp/"+station.station+"/dirmag/"+station.depth+"/"+station.adcpDirection+"/timestamps",
 			async: true,
 			success:function(data){
 				stationCounter++;

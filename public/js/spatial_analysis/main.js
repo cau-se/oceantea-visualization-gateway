@@ -374,7 +374,7 @@ function createRegionButtons() {
 				inputs[i].disabled = true;
 			}
 
-			alert("loading data, please wait!");
+			//alert("loading data, please wait!");
 			
 			$.when(
 				$.ajax({

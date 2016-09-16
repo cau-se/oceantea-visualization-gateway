@@ -149,6 +149,8 @@ function loadSlider() {
 }
 function whatTheChangeTimeSliderDoes() {
 	
+	var originalTimeVal;
+	
 	changeTimeSlider.slider().on('slideStart', function(ev){
 		originalTimeVal = changeTimeSlider.data('slider').getValue();
 	});
@@ -170,6 +172,8 @@ function whatTheChangeTimeSliderDoes() {
 }
 
 function whatTheChangeSpeedSliderDoes() {
+	
+	var originalSpeedVal;
 	
 	changeSpeedSlider.slider().on('slideStart', function(ev){
 		originalSpeedVal = changeSpeedSlider.data('slider').getValue();

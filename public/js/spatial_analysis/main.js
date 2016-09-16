@@ -88,10 +88,10 @@ var numberOfStationDirections;
 // .\chrome.exe --user-data-dir="C:/Chrome dev session" --disable-web-security 
 
 function getCanvasSize() {
- 	var paddingMaincontainerTopBottom = 6;
- 	var paddingMaincontainerLeftRight = 15;
- 	return [window.innerWidth-2*paddingMaincontainerLeftRight, 
- 		window.innerHeight - 2*paddingMaincontainerTopBottom - $("#rowNavBar").height()];
+	var paddingMaincontainerHorizontal = 15;
+ 	var paddingMaincontainerVertical = 6 + 6;
+ 	return [window.innerWidth - 2*paddingMaincontainerHorizontal, 
+ 		window.innerHeight - 2*paddingMaincontainerVertical - $("#rowNavBar").height()];
 }
 
  

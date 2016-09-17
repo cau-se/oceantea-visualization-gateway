@@ -582,9 +582,9 @@ function show() {
 	//For testing 
 	//window.addEventListener( "keydown", showOceanFloorPosition, true);
 	//window.addEventListener( "mousedown", testOceanFloorPosition, true);
-	   
+
 	//render(); -> Double rendering BUG!
-	  
+
 	document.getElementById( 'colorGradientOnArrowsCheckbox' ).disabled = false;
 	document.getElementById( 'arrowsVisibleCheckbox').disabled = false;
 	

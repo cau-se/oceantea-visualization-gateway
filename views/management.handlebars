@@ -69,11 +69,12 @@
 						<input type="file" id="inputDataFile" name="dataFile" style="margin-top: 5px;">
 						<p class="help-block">
 							The CSV file must be formatted according to the following rules:<br>
-							1. The file must contain a header<br>
-							2. The first column must be named <i>timestamp</i> and represent the time in seconds since a reference date<br>
+							1. The file must include a header containing the column names<br>
+							2. The first column must be named <i>timestamp</i> and represent the time in seconds since the reference date you can specify below<br>
 							3. The separator must be ','<br>
 							4. Comment lines must start with a '#'<br>
-							5. If the file is ADCP data, the first <i>n</i> data columns (after the <i>timestamp</i> column) must be named &quot;directionX&quot; and the second <i>n</i> data columns must be named &quot;magnitudeX&quot;, where <i>X</i> is the bin number in ascending order.
+							5. If the file is ADCP data, the first <i>n</i> data columns (after the <i>timestamp</i> column) must be named &quot;directionX&quot; and the second <i>n</i> data columns must be named &quot;magnitudeX&quot;, where <i>X</i> is the bin number in ascending order. For example:<br>
+							<i>timestamp,direction1,direction2,direction3,magnitude1,magnitude2,magnitude3</i>
 						</p>
 						<div id="inputAutoConvert" style="margin-left: 20px;">
 							<label class="checkbox">

@@ -132,7 +132,7 @@
 	var zoomXAxes = true;
 	var zoomYAxes = true;
 
-	var mapApp;
+	var mapApp = null;
 	var mapDrawingManager;
 	var mapPrevOverlay = null;
 
@@ -486,7 +486,9 @@
 			stationsKeys.forEach(function(station) {
 				if(stations[station].region == region && !stations[station].selected && devices[stations[station].device].selected) {
 					stations[station].selected = true;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+					if(mapApp) {
+						stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+					}
 				}
 			});
 			addAndRemoveTimeSeries();
@@ -496,7 +498,9 @@
 			stationsKeys.forEach(function(station) {
 				if(stations[station].region == region && stations[station].selected) {
 					stations[station].selected = false;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+					if(mapApp) {
+						stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+					}
 				}
 			});
 			addAndRemoveTimeSeries();
@@ -510,7 +514,9 @@
 			stationsKeys.forEach(function(station) {
 				if(stations[station].device == device && !stations[station].selected && regions[stations[station].region].selected) {
 					stations[station].selected = true;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+					if(mapApp) {
+						stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, true));
+					}
 				}
 			});
 			if(groupBy == "device") {
@@ -525,7 +531,9 @@
 			stationsKeys.forEach(function(station) {
 				if(stations[station].device == device && stations[station].selected) {
 					stations[station].selected = false;
-					stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+					if(mapApp) {
+						stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, false));
+					}
 				}
 			});
 			if(groupBy == "device") {
@@ -561,7 +569,9 @@
 	
 	function toggleStation(station) {
 		stations[station].selected = !stations[station].selected;
-		stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, stations[station].selected));
+		if(mapApp) {
+			stations[station].mapMarker.setIcon(getSVGIconURL(stations[station].device, stations[station].selected));
+		}
 		if(stations[station].selected) {
 			if(groupBy == "device") {
 				addNonexistentGroups();
@@ -847,7 +857,7 @@
 	}
 	
 	function centerMapOnRegion(region) {
-		if(!(regions.hasOwnProperty(region))) {
+		if(!mapApp || !(regions.hasOwnProperty(region))) {
 			return;
 		}
 		var rangeLat = regions[region].latRange;
